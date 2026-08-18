@@ -1,0 +1,45 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Amina Otieno",
+      "email": "amina@ajalihq.test",
+      "role": "reporter"
+    },
+    {
+      "id": 2,
+      "name": "Brian Mwangi",
+      "email": "brian@ajalihq.test",
+      "role": "admin"
+    }
+  ],
+  "incidents": [
+    {
+      "id": 1,
+      "title": "Traffic collision on Mombasa Road",
+      "description": "Two vehicles collided near the Nyayo Stadium exit. Traffic is delayed in both directions.",
+      "status": "reported",
+      "location": "Nairobi",
+      "userId": 1,
+      "createdAt": "2026-08-18T09:15:00.000Z"
+    },
+    {
+      "id": 2,
+      "title": "Flooding in South B",
+      "description": "Heavy rain left several streets impassable. Residents are requesting assistance.",
+      "status": "investigating",
+      "location": "Nairobi",
+      "userId": 1,
+      "createdAt": "2026-08-18T11:42:00.000Z"
+    }
+  ],
+  "comments": [
+    {
+      "id": 1,
+      "incidentId": 1,
+      "userId": 2,
+      "body": "Emergency responders have been notified.",
+      "createdAt": "2026-08-18T09:30:00.000Z"
+    }
+  ]
+}

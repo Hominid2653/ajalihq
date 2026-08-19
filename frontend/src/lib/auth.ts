@@ -1,5 +1,7 @@
+import { apiCreateUser, apiGetUsers, type UserRecord } from "@/data/api"
+
 export type SessionUser = {
-  id: number
+  id: string
   name: string
   email: string
   role: string
@@ -38,38 +40,10 @@ export function clearPendingEmail() {
   sessionStorage.removeItem(PENDING_EMAIL_KEY)
 }
 
-type UserRecord = SessionUser & { phone?: string }
-
-async function parseUsers(response: Response): Promise<UserRecord[]> {
-  const payload = (await response.json()) as unknown
-  if (Array.isArray(payload)) return payload as UserRecord[]
-  if (payload && typeof payload === "object") {
-    const record = payload as { data?: UserRecord[]; users?: UserRecord[] }
-    if (Array.isArray(record.data)) return record.data
-    if (Array.isArray(record.users)) return record.users
-  }
-  return []
-}
-
 export async function findUserByEmail(email: string): Promise<UserRecord | null> {
+  const users = await apiGetUsers(email)
   const normalized = email.trim().toLowerCase()
-  try {
-    const response = await fetch(
-      `/api/users?email=${encodeURIComponent(email.trim())}`,
-      { signal: AbortSignal.timeout(4000) }
-    )
-    if (response.ok) {
-      const users = await parseUsers(response)
-      const match = users.find((user) => user.email.toLowerCase() === normalized)
-      if (match) return match
-    }
-  } catch {
-    // json-server may not be running; fall through to demo users
-  }
-
-  return (
-    DEMO_USERS.find((user) => user.email.toLowerCase() === normalized) ?? null
-  )
+  return users.find((user) => user.email.toLowerCase() === normalized) ?? null
 }
 
 export async function createUser(input: {
@@ -78,41 +52,5 @@ export async function createUser(input: {
   phone: string
   role?: string
 }): Promise<UserRecord> {
-  const body = {
-    name: input.name.trim(),
-    email: input.email.trim(),
-    phone: input.phone.trim(),
-    role: input.role ?? "reporter",
-  }
-
-  try {
-    const response = await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(4000),
-    })
-    if (response.ok) {
-      return (await response.json()) as UserRecord
-    }
-  } catch {
-    // ignore and use local fallback
-  }
-
-  return { id: Date.now(), ...body }
+  return apiCreateUser(input)
 }
-
-const DEMO_USERS: UserRecord[] = [
-  {
-    id: 1,
-    name: "Amina Otieno",
-    email: "amina@ajalihq.test",
-    role: "reporter",
-  },
-  {
-    id: 2,
-    name: "Brian Mwangi",
-    email: "brian@ajalihq.test",
-    role: "admin",
-  },
-]

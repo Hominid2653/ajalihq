@@ -42,7 +42,7 @@ function SearchPage() {
         </Link>
       }
     >
-      <form className="flex gap-2 px-4 py-4" onSubmit={onSubmit}>
+      <form className="mx-auto flex w-full max-w-3xl gap-2 px-4 py-4 md:px-6" onSubmit={onSubmit}>
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -53,7 +53,7 @@ function SearchPage() {
           <Search className="size-5" />
         </Button>
       </form>
-      <div className="flex flex-col gap-2 px-4 pb-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 pb-6 md:px-6">
         {results.map((incident) => (
           <ReportRow key={incident.id} incident={incident} />
         ))}

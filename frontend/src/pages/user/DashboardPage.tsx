@@ -37,7 +37,7 @@ function DashboardPage() {
         )
       }
     >
-      <section className="relative h-[220px] overflow-hidden bg-neutral-200">
+      <section className="relative h-[220px] overflow-hidden bg-neutral-200 md:h-[42vh] md:min-h-[280px]">
         <img
           src="/splash.png"
           alt=""
@@ -56,7 +56,7 @@ function DashboardPage() {
         </Link>
       </section>
 
-      <section className="flex flex-col gap-3 px-4 py-5">
+      <section className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 py-5 md:px-6">
         <h2 className="text-sm font-bold text-neutral-900">My recent reports</h2>
         {error ? (
           <p className="text-sm text-red-600">{error}</p>

@@ -12,7 +12,7 @@ function AccountPage() {
 
   return (
     <UserShell title="Account">
-      <div className="flex flex-col gap-4 px-4 py-6">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6 md:px-6">
         <div className="rounded-xl bg-[#f2efe8] px-4 py-4">
           <p className="text-lg font-bold">{session.name}</p>
           <p className="text-sm text-neutral-500">{session.email}</p>

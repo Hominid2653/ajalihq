@@ -23,7 +23,7 @@ function ReportsPage() {
         </Link>
       }
     >
-      <div className="flex flex-col gap-2 px-4 py-4">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 py-4 md:px-6">
         {incidents.map((incident) => (
           <ReportRow key={incident.id} incident={incident} />
         ))}

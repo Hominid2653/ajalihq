@@ -14,8 +14,8 @@ function SignInPage() {
   const from =
     (location.state as { from?: string } | null)?.from ?? "/dashboard"
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("amina@ajalihq.test")
+  const [password, setPassword] = useState("password")
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 

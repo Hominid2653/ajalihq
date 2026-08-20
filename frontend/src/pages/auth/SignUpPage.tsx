@@ -7,9 +7,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createUser, setSession } from "@/lib/auth"
+import { registerUser, signIn } from "@/lib/auth"
+import { defaultHomeForRole } from "@/lib/rbac"
+import { useAppDispatch } from "@/store/hooks"
 
 function SignUpPage() {
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -34,9 +37,9 @@ function SignUpPage() {
 
     setPending(true)
     try {
-      const user = await createUser({ name, email, phone })
-      setSession(user)
-      navigate("/dashboard", { replace: true })
+      const user = await registerUser({ name, email, phone })
+      signIn(dispatch, user)
+      navigate(defaultHomeForRole(user.role), { replace: true })
     } finally {
       setPending(false)
     }

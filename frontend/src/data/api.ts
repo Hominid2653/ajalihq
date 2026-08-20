@@ -4,11 +4,13 @@
  * Writes stay in memory and are mirrored to localStorage for this browser.
  */
 
+import { normalizeRole, type Role } from "@/types/auth"
+
 export type UserRecord = {
   id: string
   name: string
   email: string
-  role: string
+  role: Role
   phone?: string
 }
 
@@ -41,8 +43,8 @@ type Database = {
 }
 
 const STORAGE_KEY = "ajali-data"
-/** Bump when seed shape changes so browsers refresh lat/lng coords. */
-const STORAGE_VERSION = 2
+/** Bump when seed shape changes. */
+const STORAGE_VERSION = 3
 
 const seed: Database = {
   users: [
@@ -50,13 +52,13 @@ const seed: Database = {
       id: "1",
       name: "Amina Otieno",
       email: "amina@ajalihq.test",
-      role: "reporter",
+      role: "USER",
     },
     {
       id: "2",
       name: "Brian Mwangi",
       email: "brian@ajalihq.test",
-      role: "admin",
+      role: "ADMIN",
     },
   ],
   incidents: [
@@ -186,41 +188,52 @@ function nextId() {
 
 export async function apiGetUsers(email?: string): Promise<UserRecord[]> {
   await wait()
-  const list = db.users
+  const list = db.users.map((u) => ({ ...u, role: normalizeRole(u.role) }))
   if (!email) return [...list]
   const normalized = email.trim().toLowerCase()
   return list.filter((user) => user.email.toLowerCase() === normalized)
+}
+
+/** Mock authentication — returns user + role for Sprint 1. Sprint 2 → Flask JWT. */
+export async function apiAuthenticate(email: string): Promise<UserRecord | null> {
+  await wait()
+  const users = await apiGetUsers(email)
+  return users[0] ?? null
 }
 
 export async function apiCreateUser(input: {
   name: string
   email: string
   phone?: string
-  role?: string
+  role?: Role
 }): Promise<UserRecord> {
   await wait()
   const existing = db.users.find(
     (user) => user.email.toLowerCase() === input.email.trim().toLowerCase()
   )
-  if (existing) return existing
+  if (existing) return { ...existing, role: normalizeRole(existing.role) }
 
   const user: UserRecord = {
     id: nextId(),
     name: input.name.trim(),
     email: input.email.trim(),
     phone: input.phone?.trim(),
-    role: input.role ?? "reporter",
+    role: normalizeRole(input.role ?? "USER"),
   }
   db = { ...db, users: [...db.users, user] }
   persist()
   return user
 }
 
-export async function apiGetIncidents(): Promise<IncidentRecord[]> {
+export async function apiGetIncidents(options?: {
+  userId?: string
+}): Promise<IncidentRecord[]> {
   await wait()
-  return [...db.incidents].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt)
-  )
+  let list = [...db.incidents]
+  if (options?.userId) {
+    list = list.filter((i) => i.userId === options.userId)
+  }
+  return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
 export async function apiGetIncident(
@@ -254,6 +267,24 @@ export async function apiCreateIncident(input: {
   db = { ...db, incidents: [...db.incidents, incident] }
   persist()
   return incident
+}
+
+export async function apiUpdateIncidentStatus(
+  id: string,
+  status: string
+): Promise<IncidentRecord | null> {
+  await wait()
+  const index = db.incidents.findIndex((i) => i.id === id)
+  if (index === -1) return null
+  const updated: IncidentRecord = {
+    ...db.incidents[index],
+    status: status.trim(),
+  }
+  const incidents = [...db.incidents]
+  incidents[index] = updated
+  db = { ...db, incidents }
+  persist()
+  return updated
 }
 
 export async function apiGetComments(incidentId?: string): Promise<CommentRecord[]> {

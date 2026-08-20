@@ -1,11 +1,15 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
-import { RequireSession } from "@/components/auth/require-session"
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { ROLES } from "@/lib/rbac"
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage"
 import { LogoutConfirmPage } from "@/pages/auth/LogoutConfirmPage"
 import { SignInConfirmPage } from "@/pages/auth/SignInConfirmPage"
 import { SignInPage } from "@/pages/auth/SignInPage"
 import { SignUpPage } from "@/pages/auth/SignUpPage"
+import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage"
+import { AdminIncidentDetailPage } from "@/pages/admin/AdminIncidentDetailPage"
+import { AdminIncidentsPage } from "@/pages/admin/AdminIncidentsPage"
 import { ComingSoonPage } from "@/pages/public/ComingSoonPage"
 import { LandingPage } from "@/pages/public/LandingPage"
 import { SupportPage, TermsPage } from "@/pages/public/LegalPages"
@@ -19,6 +23,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signin/confirm" element={<SignInConfirmPage />} />
@@ -28,46 +33,75 @@ function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/support" element={<SupportPage />} />
         <Route path="/coming-soon" element={<ComingSoonPage />} />
+
+        {/* Citizen (USER + ADMIN may browse; data scoped in pages) */}
         <Route
           path="/dashboard"
           element={
-            <RequireSession>
+            <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
               <DashboardPage />
-            </RequireSession>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/reports"
           element={
-            <RequireSession>
+            <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
               <ReportsPage />
-            </RequireSession>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/map"
           element={
-            <RequireSession>
+            <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
               <MapPage />
-            </RequireSession>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/search"
           element={
-            <RequireSession>
+            <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
               <SearchPage />
-            </RequireSession>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/account"
           element={
-            <RequireSession>
+            <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
               <AccountPage />
-            </RequireSession>
+            </ProtectedRoute>
           }
         />
+
+        {/* Admin-only */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={[ROLES.ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/incidents"
+          element={
+            <ProtectedRoute roles={[ROLES.ADMIN]}>
+              <AdminIncidentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/incidents/:id"
+          element={
+            <ProtectedRoute roles={[ROLES.ADMIN]}>
+              <AdminIncidentDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

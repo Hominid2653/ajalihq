@@ -12,7 +12,7 @@ import {
   MarkerContent,
   MarkerPopup,
 } from "@/components/ui/map"
-import { statusLabel, type Incident, fetchIncidents } from "@/lib/incidents"
+import { fetchAllIncidents, statusLabel, type Incident } from "@/lib/incidents"
 import { cn } from "@/lib/utils"
 
 /** Nairobi CBD — default map center */
@@ -38,7 +38,7 @@ function MapPage() {
   const [incidents, setIncidents] = useState<Incident[]>([])
 
   useEffect(() => {
-    fetchIncidents()
+    fetchAllIncidents()
       .then(setIncidents)
       .catch(() => setIncidents([]))
   }, [])

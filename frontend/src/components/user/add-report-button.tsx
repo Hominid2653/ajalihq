@@ -1,13 +1,13 @@
-import { Link } from "react-router-dom"
-import { Plus, Search } from "lucide-react"
+import { Link } from "react-router-dom";
+import { Plus, Search } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type AddReportButtonProps = {
-  searchHref?: string
-  className?: string
-}
+  searchHref?: string;
+  className?: string;
+};
 
 function AddReportButton({ searchHref, className }: AddReportButtonProps) {
   return (
@@ -16,7 +16,7 @@ function AddReportButton({ searchHref, className }: AddReportButtonProps) {
         "pointer-events-none absolute z-10 flex items-center gap-2 px-4",
         "inset-x-0 bottom-20 justify-center",
         "md:inset-x-auto md:right-6 md:bottom-6 md:justify-end",
-        className
+        className,
       )}
     >
       <Button
@@ -42,7 +42,7 @@ function AddReportButton({ searchHref, className }: AddReportButtonProps) {
         </Button>
       ) : null}
     </div>
-  )
+  );
 }
 
-export { AddReportButton }
+export { AddReportButton };

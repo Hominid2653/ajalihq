@@ -3,13 +3,12 @@ import { Link, useNavigate } from "react-router-dom"
 import { AuthShell } from "@/components/brand/auth-shell"
 import { Logomark } from "@/components/brand/logomark"
 import { Button } from "@/components/ui/button"
-import {
-  findUserByEmail,
-  getPendingEmail,
-  setSession,
-} from "@/lib/auth"
+import { authenticate, getPendingEmail, signIn } from "@/lib/auth"
+import { defaultHomeForRole } from "@/lib/rbac"
+import { useAppDispatch } from "@/store/hooks"
 
 function SignInConfirmPage() {
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const email = getPendingEmail()
 
@@ -19,14 +18,14 @@ function SignInConfirmPage() {
       return
     }
 
-    const user = await findUserByEmail(email)
+    const user = await authenticate(email)
     if (!user) {
       navigate("/signin", { replace: true })
       return
     }
 
-    setSession(user)
-    navigate("/dashboard", { replace: true })
+    signIn(dispatch, user)
+    navigate(defaultHomeForRole(user.role), { replace: true })
   }
 
   return (

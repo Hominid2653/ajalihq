@@ -5,14 +5,19 @@ import { Search } from "lucide-react"
 import { AddReportButton } from "@/components/user/add-report-button"
 import { ReportRow } from "@/components/user/report-row"
 import { UserShell } from "@/components/user/user-shell"
-import { fetchIncidents, type Incident } from "@/lib/incidents"
+import { fetchMyIncidents, type Incident } from "@/lib/incidents"
+import { useAuth } from "@/store/hooks"
 
 function ReportsPage() {
+  const { user } = useAuth()
   const [incidents, setIncidents] = useState<Incident[]>([])
 
   useEffect(() => {
-    fetchIncidents().then(setIncidents).catch(() => setIncidents([]))
-  }, [])
+    if (!user) return
+    fetchMyIncidents(user.id)
+      .then(setIncidents)
+      .catch(() => setIncidents([]))
+  }, [user])
 
   return (
     <UserShell

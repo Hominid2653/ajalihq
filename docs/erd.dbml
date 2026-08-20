@@ -1,0 +1,241 @@
+// Ajali! — domain ERD (Sprint 1 frontend model ↔ Sprint 2 PostgreSQL)
+// Import into https://dbdiagram.io
+
+Project ajali {
+  database_type: "PostgreSQL"
+  Note: "Emergency incident operations. Frontend types live in frontend/src/types/incident.ts"
+}
+
+Enum role {
+  USER
+  ADMIN
+}
+
+Enum incident_status {
+  PENDING
+  VERIFIED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+Enum incident_urgency {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+Enum incident_severity {
+  MINOR
+  MODERATE
+  MAJOR
+  CRITICAL
+}
+
+Enum incident_type {
+  accident
+  fire
+  medical
+  crime
+  disaster
+}
+
+Enum preferred_contact_method {
+  PHONE
+  EMAIL
+  OTHER
+}
+
+Enum verification_status {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+Enum verification_method {
+  PHONE
+  EMAIL
+  OTHER
+}
+
+Enum close_reason_code {
+  FALSE_REPORT
+  DUPLICATE
+  UNABLE_TO_VERIFY
+  INSUFFICIENT_INFORMATION
+  OTHER
+}
+
+Enum department_type {
+  POLICE
+  FIRE
+  HOSPITAL
+  AMBULANCE
+  DISASTER_RESPONSE
+  OTHER
+}
+
+Enum handoff_status {
+  PENDING
+  ACKNOWLEDGED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+Enum resolution_outcome {
+  RESOLVED
+  ASSISTANCE_PROVIDED
+  REFERRED
+  UNABLE_TO_ASSIST
+  OTHER
+}
+
+Enum media_kind {
+  image
+  video
+}
+
+Enum notification_channel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+Table users {
+  id varchar [pk]
+  name varchar [not null]
+  email varchar [unique, not null]
+  role role [not null]
+  phone varchar
+  created_at timestamptz
+}
+
+Table incidents {
+  id varchar [pk]
+  reference varchar [unique, not null]
+  title varchar [not null]
+  description text [not null]
+  type incident_type [not null]
+  urgency incident_urgency [not null]
+  severity incident_severity [not null]
+  status incident_status [not null]
+  location varchar [not null]
+  lat decimal
+  lng decimal
+  reporter_id varchar [ref: > users.id, not null]
+  reporter_name varchar
+  reporter_email varchar
+  reporter_phone varchar
+  preferred_contact_method preferred_contact_method
+  verification_id varchar
+  close_reason_code close_reason_code
+  resolution_summary text
+  resolution_notes text
+  resolution_outcome resolution_outcome
+  resolved_by_id varchar [ref: > users.id]
+  resolved_by_name varchar
+  resolved_at timestamptz
+  archived boolean [not null, default: false]
+  archive_reason text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: "created_by / reporter via reporter_id. Department links live in handoffs."
+}
+
+Table departments {
+  id varchar [pk]
+  name varchar [not null]
+  type department_type [not null]
+  description text
+  phone varchar
+  email varchar
+  location varchar
+  active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table reporter_verifications {
+  id varchar [pk]
+  incident_id varchar [ref: > incidents.id, not null]
+  status verification_status [not null]
+  method verification_method
+  notes text
+  verified_by_id varchar [ref: > users.id]
+  verified_by_name varchar
+  verified_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table incident_department_handoffs {
+  id varchar [pk]
+  incident_id varchar [ref: > incidents.id, not null]
+  department_id varchar [ref: > departments.id, not null]
+  initiated_by_id varchar [ref: > users.id, not null]
+  initiated_by_name varchar [not null]
+  status handoff_status [not null]
+  notes text
+  handed_off_at timestamptz [not null]
+  acknowledged_at timestamptz
+  completed_at timestamptz
+  updated_at timestamptz [not null]
+}
+
+Table incident_media {
+  id varchar [pk]
+  incident_id varchar [ref: > incidents.id, not null]
+  kind media_kind [not null]
+  url varchar [not null]
+  name varchar [not null]
+  created_at timestamptz [not null]
+}
+
+Table incident_notes {
+  id varchar [pk]
+  incident_id varchar [ref: > incidents.id, not null]
+  author_id varchar [ref: > users.id, not null]
+  author_name varchar [not null]
+  body text [not null]
+  created_at timestamptz [not null]
+}
+
+Table incident_status_history {
+  id varchar [pk]
+  incident_id varchar [ref: > incidents.id, not null]
+  from_status incident_status
+  to_status incident_status [not null]
+  actor_id varchar [ref: > users.id, not null]
+  actor_name varchar [not null]
+  reason text
+  created_at timestamptz [not null]
+}
+
+Table notifications {
+  id varchar [pk]
+  incident_id varchar [ref: > incidents.id]
+  type varchar [not null]
+  channel notification_channel [not null]
+  title varchar [not null]
+  body text [not null]
+  read boolean [not null, default: false]
+  created_at timestamptz [not null]
+}
+
+Table audit_logs {
+  id varchar [pk]
+  incident_id varchar [ref: > incidents.id]
+  actor_id varchar [ref: > users.id, not null]
+  actor_name varchar [not null]
+  action varchar [not null]
+  previous_value text
+  new_value text
+  reason text
+  metadata text
+  created_at timestamptz [not null]
+}
+
+Ref: incidents.verification_id > reporter_verifications.id

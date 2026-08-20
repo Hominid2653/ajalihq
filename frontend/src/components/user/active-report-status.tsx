@@ -21,7 +21,7 @@ const LIFECYCLE: IncidentStatus[] = [
   "RESOLVED",
 ]
 
-/** Prefer in-progress, then verified, then pending — newest first within tier. */
+/** Prefer in-progress, then verified, then pending - newest first within tier. */
 function pickActiveReport(incidents: Incident[]): Incident | null {
   const open = incidents
     .filter((i) => !i.archived && OPEN_STATUSES.includes(i.status))
@@ -43,7 +43,7 @@ function statusMessage(status: IncidentStatus): string {
     case "PENDING":
       return "Waiting for review by responders"
     case "VERIFIED":
-      return "Verified — response will start soon"
+      return "Verified. Response will start soon"
     case "IN_PROGRESS":
       return "Emergency response is active"
     default:

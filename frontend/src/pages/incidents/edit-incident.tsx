@@ -86,8 +86,13 @@ function EditIncidentPage() {
                 title: incident.title,
                 description: incident.description,
                 type: incident.type,
+                urgency: incident.urgency,
                 severity: incident.severity,
                 location: incident.location,
+                reporterPhone: incident.reporterPhone ?? "",
+                reporterEmail: incident.reporterEmail ?? "",
+                preferredContactMethod:
+                  incident.preferredContactMethod ?? "PHONE",
               }}
               onSubmit={handleSubmit}
               submitLabel="Save changes"

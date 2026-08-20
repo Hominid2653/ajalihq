@@ -26,7 +26,7 @@ type IncidentMapMarkerProps = {
   detailed?: boolean
 }
 
-/** Shared admin map pin — status/urgency color dot used across admin maps. */
+/** Shared admin map pin - status/urgency color dot used across admin maps. */
 function IncidentMapMarker({ incident, detailed = false }: IncidentMapMarkerProps) {
   return (
     <MapMarker longitude={incident.lng} latitude={incident.lat}>

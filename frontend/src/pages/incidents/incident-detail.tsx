@@ -26,7 +26,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { statusLabel, typeLabel, type Incident } from "@/lib/incidents"
+import { statusLabel, typeLabel, urgencyLabel, type Incident } from "@/lib/incidents"
 import { useAuth } from "@/store/hooks"
 
 function IncidentDetailPage() {
@@ -56,7 +56,7 @@ function IncidentDetailPage() {
   const eligible = incident ? isCitizenEditable(incident) : false
   const when = incident?.createdAt
     ? format(new Date(incident.createdAt), "d MMMM yyyy, h:mm a")
-    : "—"
+    : "-"
 
   async function handleWithdraw() {
     if (!incident) return
@@ -113,6 +113,9 @@ function IncidentDetailPage() {
                 <span className="text-sm text-muted-foreground">
                   {typeLabel(incident.type)}
                 </span>
+                <span className="text-sm text-muted-foreground">
+                  Urgency: {urgencyLabel(incident.urgency)}
+                </span>
               </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
@@ -131,6 +134,32 @@ function IncidentDetailPage() {
                 <p className="text-muted-foreground">{incident.description}</p>
               </div>
               <Separator />
+              <dl className="grid gap-2">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Reporter</dt>
+                  <dd className="text-right font-medium">
+                    {incident.reporterName || "-"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Phone</dt>
+                  <dd className="text-right font-medium">
+                    {incident.reporterPhone || "-"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Email</dt>
+                  <dd className="text-right font-medium">
+                    {incident.reporterEmail || "-"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Preferred contact</dt>
+                  <dd className="text-right font-medium">
+                    {incident.preferredContactMethod || "-"}
+                  </dd>
+                </div>
+              </dl>
               <p className="text-xs text-muted-foreground">Reported {when}</p>
 
               <div className="flex flex-wrap gap-2 pt-1">

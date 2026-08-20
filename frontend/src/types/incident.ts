@@ -161,7 +161,7 @@ export type StatusHistory = {
 export type AuditLog = {
   id: string
   incidentId?: string
-  /** Denormalized for UI — Flask can join or store */
+  /** Denormalized for UI - Flask can join or store */
   incidentReference?: string
   actorId: string
   actorName: string
@@ -184,7 +184,7 @@ export type AppNotification = {
   createdAt: string
 }
 
-/** List DTO — includes latest verification without N+1 */
+/** List DTO - includes latest verification without N+1 */
 export type IncidentListItem = Incident & {
   verificationStatus: VerificationStatus
 }

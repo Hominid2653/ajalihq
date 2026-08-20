@@ -65,7 +65,7 @@ function IncidentDetailPage() {
 
   const when = incident?.createdAt
     ? format(new Date(incident.createdAt), "d MMMM yyyy, h:mm a")
-    : "—"
+    : "-"
 
   const eligible =
     incident && user && incident.userId === user.id && isCitizenEditable(incident)

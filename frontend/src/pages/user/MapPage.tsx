@@ -16,7 +16,7 @@ import { statusLabel, type Incident } from "@/lib/incidents"
 import { cn } from "@/lib/utils"
 import { incidentApi } from "@/services/incident-api"
 
-/** Nairobi CBD — default map center */
+/** Nairobi CBD - default map center */
 const NAIROBI: [number, number] = [36.8172, -1.2864]
 
 function markerTone(status: string) {

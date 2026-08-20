@@ -1,26 +1,48 @@
-import { useState, type FormEvent } from "react"
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Camera } from "lucide-react"
 
 import { AuthShell } from "@/components/brand/auth-shell"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { registerUser, signIn } from "@/lib/auth"
 import { defaultHomeForRole } from "@/lib/rbac"
+import { toDurableMediaUrl } from "@/services/media-api"
 import { useAppDispatch } from "@/store/hooks"
+import { isProfileComplete } from "@/types/auth"
 
 function SignUpPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const fileRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+
+  async function onAvatarChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.")
+      return
+    }
+    try {
+      const url = await toDurableMediaUrl(file)
+      setAvatarUrl(url)
+      setError(null)
+    } catch {
+      setError("Could not process that image.")
+    } finally {
+      event.target.value = ""
+    }
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -37,13 +59,31 @@ function SignUpPage() {
 
     setPending(true)
     try {
-      const user = await registerUser({ name, email, phone })
+      const user = await registerUser({
+        name,
+        email,
+        phone,
+        avatarUrl: avatarUrl || undefined,
+      })
       signIn(dispatch, user)
-      navigate(defaultHomeForRole(user.role), { replace: true })
+      navigate(
+        isProfileComplete(user) ? defaultHomeForRole(user.role) : "/account",
+        { replace: true }
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create account.")
     } finally {
       setPending(false)
     }
   }
+
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <AuthShell>
@@ -57,14 +97,31 @@ function SignUpPage() {
       </div>
 
       <div className="mb-6 flex flex-col items-center text-center">
-        <Avatar className="mb-3 size-20">
-          <AvatarFallback className="bg-primary/15 text-primary">
-            <Camera className="size-6" />
-          </AvatarFallback>
-        </Avatar>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="group relative mb-3"
+          aria-label="Upload profile picture"
+        >
+          <Avatar className="size-20">
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
+            <AvatarFallback className="bg-primary/15 text-primary">
+              {initials || <Camera className="size-6" />}
+            </AvatarFallback>
+          </Avatar>
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
+            <Camera className="size-5 text-white" />
+          </span>
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onAvatarChange}
+        />
         <p className="max-w-xs text-sm text-pretty text-neutral-700">
-          Welcome! Let&apos;s set up your account. Upload your profile picture
-          above.
+          Welcome! Set up your account. Tap the circle to add a profile picture.
         </p>
       </div>
 
@@ -142,7 +199,7 @@ function SignUpPage() {
           type="submit"
           disabled={pending}
         >
-          Create account
+          {pending ? "Creating…" : "Create account"}
         </Button>
       </form>
 

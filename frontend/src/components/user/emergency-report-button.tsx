@@ -39,7 +39,7 @@ function EmergencyReportButton({
         </span>
       </Link>
       <p className="max-w-[16rem] text-center text-sm text-muted-foreground">
-        Tap to report an incident — help is one step away.
+        Tap to report an incident. Help is one step away.
       </p>
     </div>
   )

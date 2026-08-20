@@ -1,5 +1,5 @@
 /**
- * Citizen incident form — reuses the shared validated form used across report flows.
+ * Citizen incident form - reuses the shared validated form used across report flows.
  */
 export {
   CitizenIncidentForm as IncidentForm,

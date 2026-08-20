@@ -33,7 +33,7 @@ const ACTIONS: AuditAction[] = [
 ]
 
 function incidentLabel(item: AuditLog) {
-  return item.incidentReference || item.incidentId || "—"
+  return item.incidentReference || item.incidentId || "-"
 }
 
 function AdminAuditLogPage() {
@@ -149,12 +149,12 @@ function AdminAuditLogPage() {
                             {incidentLabel(item)}
                           </Link>
                         ) : (
-                          "—"
+                          "-"
                         )}
                       </TableCell>
-                      <TableCell>{item.previousValue || "—"}</TableCell>
-                      <TableCell>{item.newValue || "—"}</TableCell>
-                      <TableCell className="max-w-64">{item.reason || "—"}</TableCell>
+                      <TableCell>{item.previousValue || "-"}</TableCell>
+                      <TableCell>{item.newValue || "-"}</TableCell>
+                      <TableCell className="max-w-64">{item.reason || "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -182,7 +182,7 @@ function AdminAuditLogPage() {
                     ) : null}
                     {(item.previousValue || item.newValue) ? (
                       <p className="text-xs">
-                        {item.previousValue || "—"} → {item.newValue || "—"}
+                        {item.previousValue || "-"} → {item.newValue || "-"}
                       </p>
                     ) : null}
                     {item.reason ? <p className="text-xs">{item.reason}</p> : null}

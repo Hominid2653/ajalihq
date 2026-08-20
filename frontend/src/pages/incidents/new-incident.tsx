@@ -4,9 +4,11 @@ import { toast } from "sonner"
 import { createIncident, type IncidentInput } from "@/api/incidents"
 import { IncidentForm } from "@/components/incidents/incident-form"
 import { UserShell } from "@/components/user/user-shell"
+import { useAuth } from "@/store/hooks"
 
 function NewIncidentPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   async function handleSubmit(values: IncidentInput) {
     const incident = await createIncident(values)
@@ -27,7 +29,14 @@ function NewIncidentPage() {
         <p className="mb-4 text-sm text-muted-foreground">
           Fill in the details below. A reference number is assigned when you submit.
         </p>
-        <IncidentForm mode="create" onSubmit={handleSubmit} />
+        <IncidentForm
+          mode="create"
+          initialValues={{
+            reporterEmail: user?.email ?? "",
+            reporterPhone: user?.phone ?? "",
+          }}
+          onSubmit={handleSubmit}
+        />
       </div>
     </UserShell>
   )

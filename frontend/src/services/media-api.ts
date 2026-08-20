@@ -60,11 +60,43 @@ export const mediaApi = {
   ) {
     // Reject ephemeral blob URLs at the contract boundary
     const url =
-      data.url.startsWith("blob:") ? (data.kind === "video" ? "/icons.svg" : "/splash.png") : data.url
+      data.url.startsWith("blob:")
+        ? data.kind === "video"
+          ? "/icons.svg"
+          : "/splash.png"
+        : data.url
     return apiAddMedia(incidentId, { ...data, url }, actor)
   },
 
   remove(id: string, actor: Actor) {
     return apiRemoveMedia(id, actor)
   },
+}
+
+/** Convert draft picker items to durable media payloads for create/update. */
+export async function toDurableMediaItems(
+  items: Array<{
+    kind: IncidentMedia["kind"]
+    url: string
+    name: string
+    file?: File
+  }>
+): Promise<Pick<IncidentMedia, "kind" | "url" | "name">[]> {
+  return Promise.all(
+    items.map(async (item) => {
+      if (item.file) {
+        return {
+          kind: item.kind,
+          url: await toDurableMediaUrl(item.file),
+          name: item.name,
+        }
+      }
+      const url = item.url.startsWith("blob:")
+        ? item.kind === "video"
+          ? "/icons.svg"
+          : "/splash.png"
+        : item.url
+      return { kind: item.kind, url, name: item.name }
+    })
+  )
 }

@@ -4,6 +4,7 @@ import { format } from "date-fns"
 import { toast } from "sonner"
 import { ArrowLeft } from "lucide-react"
 
+import { IncidentMediaPanel } from "@/components/shared/incident-media-panel"
 import { UserShell } from "@/components/user/user-shell"
 import {
   AlertDialog,
@@ -30,8 +31,46 @@ import {
   withdrawMyIncident,
   type Incident,
 } from "@/lib/incidents"
+import { mediaApi } from "@/services/media-api"
 import { useAuth } from "@/store/hooks"
 import { cn } from "@/lib/utils"
+import type { IncidentMedia } from "@/types/incident"
+
+function EvidenceGallery({ incidentId }: { incidentId: string }) {
+  const [media, setMedia] = useState<IncidentMedia[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    mediaApi
+      .list(incidentId)
+      .then((items) => {
+        if (active) setMedia(items)
+      })
+      .catch(() => {
+        if (active) setMedia([])
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [incidentId])
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Loading evidence…</p>
+  }
+
+  if (media.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No evidence photos attached.</p>
+    )
+  }
+
+  return <IncidentMediaPanel media={media} readOnly />
+}
 
 function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -136,6 +175,10 @@ function IncidentDetailPage() {
                 </p>
               ) : null}
               <p className="text-muted-foreground">{incident.description}</p>
+              <div className="space-y-2">
+                <p className="font-medium">Evidence</p>
+                <EvidenceGallery incidentId={incident.id} />
+              </div>
               <Separator />
               <dl className="grid gap-2">
                 <div className="flex justify-between gap-4">

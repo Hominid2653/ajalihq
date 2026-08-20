@@ -5,6 +5,7 @@ import {
   apiCloseIncident,
   apiCreateIncident,
   apiGetActiveIncidents,
+  apiGetCommunityIncidents,
   apiGetHistory,
   apiGetIncident,
   apiGetIncidents,
@@ -95,6 +96,10 @@ export const incidentApi = {
   },
   getActive() {
     return apiGetActiveIncidents()
+  },
+  /** Citizen-facing community reports (verified / in progress / resolved). */
+  getCommunity() {
+    return apiGetCommunityIncidents()
   },
   getVerification(incidentId: string) {
     return apiGetVerification(incidentId)

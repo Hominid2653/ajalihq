@@ -20,11 +20,16 @@ function ReportIncidentPage() {
       description: values.description,
       location: values.location,
       type: values.type,
+      urgency: values.urgency,
       severity: values.severity,
+      lat: values.lat,
+      lng: values.lng,
       userId: user.id,
       reporterName: user.name,
-      reporterEmail: user.email,
-      reporterPhone: user.phone,
+      reporterEmail: values.reporterEmail.trim() || user.email,
+      reporterPhone: values.reporterPhone.trim() || user.phone,
+      preferredContactMethod: values.preferredContactMethod,
+      media: values.media,
     })
     toast.success("Report submitted.")
     navigate(`/reports/${incident.id}`, { replace: true })
@@ -40,7 +45,14 @@ function ReportIncidentPage() {
       }
     >
       <div className="mx-auto w-full max-w-lg px-4 py-6 md:px-8">
-        <CitizenIncidentForm mode="create" onSubmit={onSubmit} />
+        <CitizenIncidentForm
+          mode="create"
+          initialValues={{
+            reporterEmail: user?.email ?? "",
+            reporterPhone: user?.phone ?? "",
+          }}
+          onSubmit={onSubmit}
+        />
       </div>
     </UserShell>
   )

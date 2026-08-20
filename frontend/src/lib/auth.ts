@@ -51,6 +51,7 @@ export async function registerUser(input: {
   email: string
   phone: string
   avatarUrl?: string
+  idNumber?: string
 }): Promise<AuthUser> {
   const user = await apiCreateUser({ ...input, role: "USER" })
   return mapUserRecord(user)

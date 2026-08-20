@@ -26,6 +26,10 @@ type IncidentMediaPanelProps = {
   onChanged?: () => void
   className?: string
   readOnly?: boolean
+  /** File input accept attribute (default images + videos). */
+  accept?: string
+  /** Label for the add button. */
+  addLabel?: string
 }
 
 function IncidentMediaPanel({
@@ -37,6 +41,8 @@ function IncidentMediaPanel({
   onChanged,
   className,
   readOnly = false,
+  accept = "image/*,video/*",
+  addLabel = "Add photos / videos",
 }: IncidentMediaPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -107,7 +113,7 @@ function IncidentMediaPanel({
           <input
             ref={inputRef}
             type="file"
-            accept="image/*,video/*"
+            accept={accept}
             multiple
             className="hidden"
             onChange={(event) => {
@@ -123,7 +129,7 @@ function IncidentMediaPanel({
             onClick={() => inputRef.current?.click()}
           >
             <ImagePlus className="mr-2 size-4" />
-            Add photos / videos
+            {addLabel}
           </Button>
           {busy ? <span className="text-xs text-muted-foreground">Uploading…</span> : null}
         </div>

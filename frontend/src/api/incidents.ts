@@ -5,9 +5,11 @@
  */
 import {
   createIncident as createIncidentRecord,
+  fetchCommunityIncidents,
   fetchIncidentById,
   fetchMyIncidents,
   isCitizenEditable,
+  isCommunityVisible,
   updateMyIncident,
   withdrawMyIncident,
   type Incident,
@@ -30,6 +32,10 @@ export type IncidentInput = {
   preferredContactMethod?: PreferredContactMethod
   lat?: number | null
   lng?: number | null
+  media?: Pick<
+    import("@/types/incident").IncidentMedia,
+    "kind" | "url" | "name"
+  >[]
 }
 
 function requireActor() {
@@ -48,12 +54,28 @@ export async function listIncidents(): Promise<Incident[]> {
   return fetchMyIncidents(actor.id)
 }
 
+/** Community reports shared across citizen map + dashboard (all users). */
+export async function listCommunityIncidents(): Promise<Incident[]> {
+  requireActor()
+  return fetchCommunityIncidents()
+}
+
 export async function getIncident(id: string): Promise<Incident> {
   const incident = await fetchIncidentById(id)
   if (!incident) throw new Error("Incident not found.")
   const actor = requireActor()
-  if (incident.userId !== actor.id) {
+  const isOwner = incident.userId === actor.id
+  if (!isOwner && !isCommunityVisible(incident)) {
     throw new Error("You do not have access to this report.")
+  }
+  // Hide private contact details from other citizens
+  if (!isOwner) {
+    return {
+      ...incident,
+      reporterPhone: undefined,
+      reporterEmail: undefined,
+      preferredContactMethod: undefined,
+    }
   }
   return incident
 }
@@ -74,6 +96,7 @@ export async function createIncident(input: IncidentInput): Promise<Incident> {
     reporterEmail: input.reporterEmail?.trim() || actor.email,
     reporterPhone: input.reporterPhone?.trim() || actor.phone,
     preferredContactMethod: input.preferredContactMethod ?? "PHONE",
+    media: input.media,
   })
 }
 
@@ -106,4 +129,4 @@ export async function withdrawIncident(id: string): Promise<Incident> {
   return withdrawMyIncident(id, { id: actor.id, name: actor.name })
 }
 
-export { isCitizenEditable }
+export { isCitizenEditable, isCommunityVisible }

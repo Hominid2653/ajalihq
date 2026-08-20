@@ -15,6 +15,10 @@ export type AuthUser = {
   bio?: string
   preferredContactMethod?: PreferredContactMethod
   profileComplete?: boolean
+  /** National ID / passport number used for account verification. */
+  idNumber?: string
+  /** True when the account has a verified ID number on file. */
+  verified?: boolean
 }
 
 /** Persisted session shape (localStorage). Matches AuthUser for easy Sprint 2 swap. */
@@ -32,6 +36,23 @@ export function normalizeRole(raw: string | undefined | null): Role {
   return "USER"
 }
 
+/** Normalize and validate a Kenyan-style national ID (7–8 digits). */
+export function normalizeIdNumber(raw: string | undefined | null): string | undefined {
+  if (!raw) return undefined
+  const digits = raw.replace(/\D/g, "")
+  return digits || undefined
+}
+
+export function isValidIdNumber(raw: string | undefined | null): boolean {
+  const digits = normalizeIdNumber(raw)
+  return Boolean(digits && digits.length >= 7 && digits.length <= 8)
+}
+
+export function isAccountVerified(user: AuthUser | null | undefined): boolean {
+  if (!user) return false
+  return Boolean(user.verified ?? (user.idNumber && isValidIdNumber(user.idNumber)))
+}
+
 export function toAuthUser(input: {
   id: string
   name: string
@@ -43,8 +64,12 @@ export function toAuthUser(input: {
   bio?: string
   preferredContactMethod?: PreferredContactMethod
   profileComplete?: boolean
+  idNumber?: string
+  verified?: boolean
 }): AuthUser {
   const phone = input.phone
+  const idNumber = normalizeIdNumber(input.idNumber)
+  const verified = input.verified ?? Boolean(idNumber && isValidIdNumber(idNumber))
   return {
     id: input.id,
     name: input.name,
@@ -57,6 +82,8 @@ export function toAuthUser(input: {
     preferredContactMethod: input.preferredContactMethod ?? "PHONE",
     profileComplete:
       input.profileComplete ?? Boolean(input.name.trim() && phone),
+    idNumber,
+    verified,
   }
 }
 

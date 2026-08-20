@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
-import { Camera, Check, Pencil } from "lucide-react"
+import { BadgeCheck, Camera, Check, Pencil } from "lucide-react"
 import { toast } from "sonner"
 
 import { UserShell } from "@/components/user/user-shell"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -18,15 +25,16 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  applyProfile,
-  updateUserProfile,
-} from "@/lib/auth"
+import { applyProfile, updateUserProfile } from "@/lib/auth"
+import { cn } from "@/lib/utils"
 import { toDurableMediaUrl } from "@/services/media-api"
 import { useAppDispatch, useAuth } from "@/store/hooks"
-import type { PreferredContactMethod } from "@/types/auth"
-import { isProfileComplete } from "@/types/auth"
-import { cn } from "@/lib/utils"
+import {
+  isAccountVerified,
+  isProfileComplete,
+  isValidIdNumber,
+  type PreferredContactMethod,
+} from "@/types/auth"
 
 type ProfileFormState = {
   name: string
@@ -35,6 +43,12 @@ type ProfileFormState = {
   bio: string
   preferredContactMethod: PreferredContactMethod
   avatarUrl: string
+  idNumber: string
+}
+
+function maskIdNumber(idNumber: string) {
+  if (idNumber.length <= 4) return idNumber
+  return `••••${idNumber.slice(-4)}`
 }
 
 function AccountPage() {
@@ -57,8 +71,8 @@ function AccountPage() {
       bio: session.bio ?? "",
       preferredContactMethod: session.preferredContactMethod ?? "PHONE",
       avatarUrl: session.avatarUrl ?? "",
+      idNumber: session.idNumber ?? "",
     })
-    // Open editor when profile is incomplete (first-time setup)
     if (!isProfileComplete(session)) setEditing(true)
   }, [session])
 
@@ -66,12 +80,18 @@ function AccountPage() {
 
   const initials = session.name
     .split(" ")
-    .map((n) => n[0])
+    .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase()
 
-  function setField<K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) {
+  const verified = isAccountVerified(session)
+  const complete = isProfileComplete(session)
+
+  function setField<K extends keyof ProfileFormState>(
+    key: K,
+    value: ProfileFormState[K]
+  ) {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev))
   }
 
@@ -107,6 +127,10 @@ function AccountPage() {
       setError("Phone number is required for emergency contact.")
       return
     }
+    if (form.idNumber.trim() && !isValidIdNumber(form.idNumber)) {
+      setError("ID number must be 7 or 8 digits.")
+      return
+    }
 
     setSaving(true)
     try {
@@ -117,10 +141,15 @@ function AccountPage() {
         bio: form.bio,
         preferredContactMethod: form.preferredContactMethod,
         avatarUrl: form.avatarUrl,
+        idNumber: form.idNumber.trim(),
       })
       applyProfile(dispatch, updated)
       setEditing(false)
-      toast.success("Profile saved.")
+      toast.success(
+        isAccountVerified(updated)
+          ? "Profile saved. Account verified."
+          : "Profile saved."
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save profile.")
     } finally {
@@ -137,12 +166,11 @@ function AccountPage() {
       bio: session.bio ?? "",
       preferredContactMethod: session.preferredContactMethod ?? "PHONE",
       avatarUrl: session.avatarUrl ?? "",
+      idNumber: session.idNumber ?? "",
     })
     setError(null)
     setEditing(false)
   }
-
-  const complete = isProfileComplete(session)
 
   return (
     <UserShell title="Account">
@@ -150,6 +178,11 @@ function AccountPage() {
         {!complete ? (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
             Finish your profile so responders can reach you during an emergency.
+          </div>
+        ) : null}
+        {!verified ? (
+          <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm">
+            Add your national ID number to verify your account.
           </div>
         ) : null}
 
@@ -163,7 +196,10 @@ function AccountPage() {
             >
               <Avatar className="size-16 ring-2 ring-background md:size-20">
                 {form.avatarUrl || session.avatarUrl ? (
-                  <AvatarImage src={form.avatarUrl || session.avatarUrl} alt="" />
+                  <AvatarImage
+                    src={form.avatarUrl || session.avatarUrl}
+                    alt=""
+                  />
                 ) : null}
                 <AvatarFallback className="bg-[var(--ajali-primary)] text-lg font-bold text-white">
                   {initials}
@@ -181,9 +217,22 @@ function AccountPage() {
               onChange={onAvatarChange}
             />
             <div className="min-w-0 flex-1">
-              <CardTitle className="truncate text-base md:text-lg">
-                {session.name}
-              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="truncate text-base md:text-lg">
+                  {session.name}
+                </CardTitle>
+                {verified ? (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 border-[var(--status-resolved)]/30 bg-[var(--status-resolved)]/15 text-[var(--status-resolved)]"
+                  >
+                    <BadgeCheck className="size-3.5" />
+                    Verified
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">Unverified</Badge>
+                )}
+              </div>
               <CardDescription className="truncate">{session.email}</CardDescription>
               <p className="mt-1 text-xs text-muted-foreground">
                 {complete ? (
@@ -215,6 +264,14 @@ function AccountPage() {
             </p>
             {!editing ? (
               <>
+                <p>
+                  <span className="text-muted-foreground">ID number:</span>{" "}
+                  <span className="font-medium">
+                    {session.idNumber
+                      ? maskIdNumber(session.idNumber)
+                      : "Not set"}
+                  </span>
+                </p>
                 <p>
                   <span className="text-muted-foreground">Phone:</span>{" "}
                   <span className="font-medium">{session.phone || "-"}</span>
@@ -276,6 +333,20 @@ function AccountPage() {
                   Email is used to sign in and cannot be changed here.
                 </p>
               </div>
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label htmlFor="profile-id">National ID number</Label>
+                <Input
+                  id="profile-id"
+                  inputMode="numeric"
+                  className="h-11 bg-[var(--ajali-surface)]"
+                  placeholder="7 or 8 digit ID"
+                  value={form.idNumber}
+                  onChange={(e) => setField("idNumber", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Adding a valid ID number marks your account as verified.
+                </p>
+              </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="profile-phone">Phone</Label>
                 <Input
@@ -303,10 +374,16 @@ function AccountPage() {
                 <Select
                   value={form.preferredContactMethod}
                   onValueChange={(value) =>
-                    setField("preferredContactMethod", value as PreferredContactMethod)
+                    setField(
+                      "preferredContactMethod",
+                      value as PreferredContactMethod
+                    )
                   }
                 >
-                  <SelectTrigger id="profile-contact" className="h-11 w-full bg-[var(--ajali-surface)]">
+                  <SelectTrigger
+                    id="profile-contact"
+                    className="h-11 w-full bg-[var(--ajali-surface)]"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

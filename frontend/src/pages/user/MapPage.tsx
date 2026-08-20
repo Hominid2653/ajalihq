@@ -3,50 +3,32 @@ import { Link } from "react-router-dom"
 import { Search } from "lucide-react"
 
 import { AddReportButton } from "@/components/user/add-report-button"
+import { CitizenMapMarker } from "@/components/user/citizen-map-marker"
 import { UserShell } from "@/components/user/user-shell"
 import { Badge } from "@/components/ui/badge"
-import {
-  Map,
-  MapControls,
-  MapMarker,
-  MarkerContent,
-  MarkerPopup,
-} from "@/components/ui/map"
-import { statusLabel, type Incident } from "@/lib/incidents"
-import { cn } from "@/lib/utils"
-import { incidentApi } from "@/services/incident-api"
+import { Map, MapControls } from "@/components/ui/map"
+import { fetchCommunityMapIncidents } from "@/lib/incidents"
+import type { Incident } from "@/lib/incidents"
 
 /** Nairobi CBD - default map center */
 const NAIROBI: [number, number] = [36.8172, -1.2864]
 
-function markerTone(status: string) {
-  const s = (status ?? "").toLowerCase()
-  if (s === "verified") return "bg-[var(--status-verified)]"
-  if (s === "in_progress") {
-    return "bg-[var(--status-progress)]"
-  }
-  if (s === "resolved") return "bg-[var(--status-resolved)]"
-  if (s === "closed") return "bg-[var(--status-closed)]"
-  return "bg-[var(--ajali-primary)]"
-}
-
 function MapPage() {
-  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [incidents, setIncidents] = useState<
+    (Incident & { lat: number; lng: number })[]
+  >([])
 
   useEffect(() => {
-    incidentApi.getActive()
+    fetchCommunityMapIncidents()
       .then(setIncidents)
       .catch(() => setIncidents([]))
   }, [])
 
-  const active = useMemo(
-    () =>
-      incidents.filter(
-        (incident): incident is Incident & { lat: number; lng: number } =>
-          incident.lat !== null && incident.lng !== null
-      ),
-    [incidents]
-  )
+  const counts = useMemo(() => {
+    const resolved = incidents.filter((i) => i.status === "RESOLVED").length
+    const active = incidents.length - resolved
+    return { total: incidents.length, active, resolved }
+  }, [incidents])
 
   return (
     <UserShell
@@ -57,12 +39,12 @@ function MapPage() {
             className="size-2 shrink-0 rounded-full bg-[var(--ajali-primary)]"
             aria-hidden
           />
-          <span className="truncate">Active incidents</span>
+          <span className="truncate">Community incidents</span>
           <Badge
             variant="default"
             className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums"
           >
-            {active.length}
+            {counts.total}
           </Badge>
         </>
       }
@@ -87,37 +69,23 @@ function MapPage() {
             className="mb-20 md:mb-4"
           />
 
-          {active.map((incident) => (
-            <MapMarker
+          {incidents.map((incident) => (
+            <CitizenMapMarker
               key={incident.id}
-              longitude={incident.lng}
-              latitude={incident.lat}
-            >
-              <MarkerContent>
-                <span
-                  className={cn(
-                    "block size-3.5 rounded-full border-2 border-white shadow-md ring-1 ring-black/10",
-                    markerTone(incident.status)
-                  )}
-                  aria-hidden
-                />
-              </MarkerContent>
-              <MarkerPopup closeButton className="min-w-[200px] max-w-[260px]">
-                <div className="space-y-1 p-1">
-                  <p className="text-sm font-semibold text-foreground">
-                    {incident.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {incident.location}
-                  </p>
-                  <p className="text-xs font-medium capitalize text-primary">
-                    {statusLabel(incident.status)}
-                  </p>
-                </div>
-              </MarkerPopup>
-            </MapMarker>
+              incident={incident}
+              showLabel
+            />
           ))}
         </Map>
+
+        <div className="pointer-events-none absolute top-16 left-4 z-10 flex flex-wrap gap-2 md:top-5 md:left-5">
+          <Badge variant="secondary" className="pointer-events-auto shadow-sm">
+            Active {counts.active}
+          </Badge>
+          <Badge variant="outline" className="pointer-events-auto bg-background/90 shadow-sm">
+            Resolved {counts.resolved}
+          </Badge>
+        </div>
 
         <AddReportButton
           searchHref="/search"

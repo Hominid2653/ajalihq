@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom"
 
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { ROLES } from "@/lib/rbac"
@@ -22,11 +22,17 @@ import { LandingPage } from "@/pages/public/LandingPage"
 import { PrivacyPage, SupportPage, TermsPage } from "@/pages/public/LegalPages"
 import { AccountPage } from "@/pages/user/AccountPage"
 import { DashboardPage } from "@/pages/user/DashboardPage"
-import { IncidentDetailPage } from "@/pages/user/IncidentDetailPage"
 import { MapPage } from "@/pages/user/MapPage"
-import { ReportIncidentPage } from "@/pages/user/ReportIncidentPage"
-import { ReportsPage } from "@/pages/user/ReportsPage"
 import { SearchPage } from "@/pages/user/SearchPage"
+import { EditIncidentPage } from "@/pages/incidents/edit-incident"
+import { IncidentDetailPage } from "@/pages/incidents/incident-detail"
+import { IncidentsListPage } from "@/pages/incidents/incident-list"
+import { NewIncidentPage } from "@/pages/incidents/new-incident"
+
+function LegacyReportRedirect({ suffix = "" }: { suffix?: string }) {
+  const { id } = useParams<{ id: string }>()
+  return <Navigate to={`/incidents/${id}${suffix}`} replace />
+}
 
 function App() {
   return (
@@ -54,15 +60,23 @@ function App() {
           }
         />
         <Route
-          path="/reports"
+          path="/incidents"
           element={
             <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
-              <ReportsPage />
+              <IncidentsListPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/reports/:id"
+          path="/incidents/new"
+          element={
+            <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
+              <NewIncidentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/incidents/:id"
           element={
             <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
               <IncidentDetailPage />
@@ -70,13 +84,21 @@ function App() {
           }
         />
         <Route
-          path="/report"
+          path="/incidents/:id/edit"
           element={
             <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
-              <ReportIncidentPage />
+              <EditIncidentPage />
             </ProtectedRoute>
           }
         />
+        {/* Legacy report URLs → incidents flow */}
+        <Route path="/reports" element={<Navigate to="/incidents" replace />} />
+        <Route path="/report" element={<Navigate to="/incidents/new" replace />} />
+        <Route
+          path="/reports/:id/edit"
+          element={<LegacyReportRedirect suffix="/edit" />}
+        />
+        <Route path="/reports/:id" element={<LegacyReportRedirect />} />
         <Route
           path="/map"
           element={

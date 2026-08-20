@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { Plus, Search } from "lucide-react"
 
+import { listIncidents } from "@/api/incidents"
 import { AddReportButton } from "@/components/user/add-report-button"
 import {
   ReportsDesktopTable,
@@ -11,31 +12,24 @@ import { UserShell } from "@/components/user/user-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  fetchMyIncidents,
-  isUnsetStatus,
-  type Incident,
-} from "@/lib/incidents"
-import { useAuth } from "@/store/hooks"
+import { isUnsetStatus, type Incident } from "@/lib/incidents"
 
-function ReportsPage() {
-  const { user } = useAuth()
+function IncidentsListPage() {
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user) return
     setLoading(true)
     setError(null)
-    fetchMyIncidents(user.id)
+    listIncidents()
       .then(setIncidents)
-      .catch(() => {
+      .catch((err: unknown) => {
         setIncidents([])
-        setError("Could not load your reports.")
+        setError(err instanceof Error ? err.message : "Failed to load incidents")
       })
       .finally(() => setLoading(false))
-  }, [user])
+  }, [])
 
   const stats = useMemo(
     () => ({
@@ -48,27 +42,22 @@ function ReportsPage() {
 
   return (
     <UserShell
-      title="My reports"
+      title="My incidents"
       end={
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            className="hidden font-semibold md:inline-flex"
-            asChild
-          >
-            <Link to="/report">
+          <Button size="sm" className="hidden font-semibold md:inline-flex" asChild>
+            <Link to="/incidents/new">
               <Plus className="size-4" />
               Report
             </Link>
           </Button>
-          <Link to="/search" aria-label="Search reports">
+          <Link to="/search" aria-label="Search incidents">
             <Search className="size-5 text-foreground" />
           </Link>
         </div>
       }
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 lg:px-10">
-        {/* Summary - moved from dashboard */}
         <section className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { label: "Total", value: stats.total },
@@ -85,9 +74,7 @@ function ReportsPage() {
                 {loading ? (
                   <Skeleton className="mx-auto h-8 w-10" />
                 ) : (
-                  <p className="text-xl font-bold text-foreground sm:text-2xl">
-                    {value}
-                  </p>
+                  <p className="text-xl font-bold sm:text-2xl">{value}</p>
                 )}
               </CardContent>
             </Card>
@@ -104,16 +91,14 @@ function ReportsPage() {
             <Skeleton className="hidden h-64 w-full rounded-xl md:block" />
           </>
         ) : error ? (
-          <p className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
-            {error}
-          </p>
+          <p className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">{error}</p>
         ) : incidents.length === 0 ? (
           <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-8">
             <p className="text-sm text-muted-foreground">
-              You haven&apos;t submitted any reports yet.
+              You haven&apos;t submitted any incidents yet.
             </p>
             <Button asChild>
-              <Link to="/report">Report an incident</Link>
+              <Link to="/incidents/new">Report an incident</Link>
             </Button>
           </div>
         ) : (
@@ -121,7 +106,7 @@ function ReportsPage() {
             <ReportsMobileList incidents={incidents} />
             <ReportsDesktopTable incidents={incidents} />
             <p className="text-sm text-muted-foreground">
-              {incidents.length} report{incidents.length === 1 ? "" : "s"}
+              {incidents.length} incident{incidents.length === 1 ? "" : "s"}
             </p>
           </>
         )}
@@ -131,4 +116,4 @@ function ReportsPage() {
   )
 }
 
-export { ReportsPage }
+export { IncidentsListPage }

@@ -42,7 +42,7 @@ function SearchPage() {
     <UserShell
       title="Search reports"
       end={
-        <Link to="/reports" aria-label="Close search">
+        <Link to="/incidents" aria-label="Close search">
           <X className="size-5 text-foreground" />
         </Link>
       }

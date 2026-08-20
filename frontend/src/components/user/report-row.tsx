@@ -28,8 +28,8 @@ function ReportRow({
   const unset = isUnsetStatus(incident.status)
   const when = incident.createdAt
     ? format(new Date(incident.createdAt), "d MMM, h:mm a")
-    : "—"
-  const to = href ?? `/reports/${incident.id}`
+    : "-"
+  const to = href ?? `/incidents/${incident.id}`
 
   return (
     <Link to={to} className="block focus-visible:outline-none">

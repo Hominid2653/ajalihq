@@ -1,11 +1,14 @@
 /**
- * Auth service — thin facade over api.ts.
+ * Auth service - thin facade over api.ts.
  * Sprint 2: swap internals to call Flask; keep this interface stable for Redux + pages.
  */
 import {
   apiAuthenticate,
   apiCreateUser,
+  apiGetUser,
   apiGetUsers,
+  apiUpdateUser,
+  type UpdateUserPatch,
   type UserRecord,
 } from "@/data/api"
 import {
@@ -16,7 +19,7 @@ import {
   setPendingEmail,
   writeSession,
 } from "@/lib/auth-storage"
-import { login, logout } from "@/store/authSlice"
+import { login, logout, updateProfile as updateProfileAction } from "@/store/authSlice"
 import { toAuthUser, type AuthUser } from "@/types/auth"
 import type { AppDispatch } from "@/store/index"
 
@@ -34,7 +37,7 @@ export async function findUserByEmail(email: string): Promise<UserRecord | null>
   return users.find((user) => user.email.toLowerCase() === normalized) ?? null
 }
 
-/** Mock authenticate — password ignored in Sprint 1. */
+/** Mock authenticate - password ignored in Sprint 1. */
 export async function authenticate(
   email: string,
   _password?: string
@@ -47,8 +50,22 @@ export async function registerUser(input: {
   name: string
   email: string
   phone: string
+  avatarUrl?: string
 }): Promise<AuthUser> {
   const user = await apiCreateUser({ ...input, role: "USER" })
+  return mapUserRecord(user)
+}
+
+export async function fetchProfile(userId: string): Promise<AuthUser | null> {
+  const user = await apiGetUser(userId)
+  return user ? mapUserRecord(user) : null
+}
+
+export async function updateUserProfile(
+  userId: string,
+  patch: UpdateUserPatch
+): Promise<AuthUser> {
+  const user = await apiUpdateUser(userId, patch)
   return mapUserRecord(user)
 }
 
@@ -58,6 +75,11 @@ export function signIn(dispatch: AppDispatch, user: AuthUser) {
 
 export function signOut(dispatch: AppDispatch) {
   dispatch(logout())
+}
+
+/** Persist profile changes to Redux + localStorage after API success. */
+export function applyProfile(dispatch: AppDispatch, user: AuthUser) {
+  dispatch(updateProfileAction(user))
 }
 
 /** Read session directly from storage (non-reactive). Prefer useAuth(). */

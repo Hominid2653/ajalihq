@@ -16,7 +16,7 @@ import { incidentApi } from "@/services/incident-api"
 import type { Incident } from "@/types/incident"
 import { statusLabel, typeLabel } from "@/types/incident"
 
-/** Kenya overview — matches operational map framing */
+/** Kenya overview - matches operational map framing */
 const KENYA: [number, number] = [37.0, -0.5]
 
 type ActiveReporter = {
@@ -60,7 +60,7 @@ function AdminDashboardPage() {
     [incidents]
   )
 
-  /** Reporters on VERIFIED or IN_PROGRESS incidents — newest activity first */
+  /** Reporters on VERIFIED or IN_PROGRESS incidents - newest activity first */
   const activeReporters = useMemo(() => {
     const active = incidents
       .filter(
@@ -207,7 +207,7 @@ function AdminDashboardPage() {
             <div className="mt-3 flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
                 {latestReports.length > 0
-                  ? `1 – ${latestReports.length} of ${incidents.filter((i) => !i.archived).length}`
+                  ? `1 - ${latestReports.length} of ${incidents.filter((i) => !i.archived).length}`
                   : null}
               </span>
               <Link to="/admin/incidents" className="font-semibold text-[var(--ajali-primary)] hover:underline">
@@ -258,7 +258,7 @@ function AdminDashboardPage() {
             <div className="mt-3 flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
                 {activeReporters.length > 0
-                  ? `1 – ${activeReporters.length} of ${activeReporterTotal}`
+                  ? `1 - ${activeReporters.length} of ${activeReporterTotal}`
                   : null}
               </span>
               <Link

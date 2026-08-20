@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 
+//Importing reusable components from UI folder 
+
 import {
   Card,
   CardContent,
@@ -8,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+
 import { Button } from "@/components/ui/button"
 import { IncidentForm } from "@/components/incidents/incident-form"
 import { getIncident, updateIncident } from "@/api/incidents"

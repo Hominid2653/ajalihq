@@ -11,7 +11,6 @@ import { AdminAnalyticsPage } from "@/pages/admin/AdminAnalyticsPage"
 import { AdminDepartmentsPage } from "@/pages/admin/AdminDepartmentsPage"
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage"
 import { AdminAuditLogPage } from "@/pages/admin/AdminAuditLogPage"
-import { AdminIncidentCreatePage } from "@/pages/admin/AdminIncidentCreatePage"
 import { AdminIncidentDetailPage } from "@/pages/admin/AdminIncidentDetailPage"
 import { AdminIncidentEditPage } from "@/pages/admin/AdminIncidentEditPage"
 import { AdminIncidentReviewPage } from "@/pages/admin/AdminIncidentReviewPage"
@@ -132,7 +131,7 @@ function App() {
           path="/admin/incidents/new"
           element={
             <ProtectedRoute roles={[ROLES.ADMIN]}>
-              <AdminIncidentCreatePage />
+              <Navigate to="/admin" replace />
             </ProtectedRoute>
           }
         />

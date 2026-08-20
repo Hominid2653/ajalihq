@@ -683,7 +683,12 @@ export async function apiGetIncidents(
   await wait()
   let list = db.incidents.filter((item) => options?.includeArchived || !item.archived)
   if (options?.userId) list = list.filter((item) => item.userId === options.userId)
-  if (options?.status) list = list.filter((item) => item.status === options.status)
+  if (options?.status) {
+    list = list.filter((item) => item.status === options.status)
+  } else if (options?.statusIn?.length) {
+    const allowed = new Set(options.statusIn)
+    list = list.filter((item) => allowed.has(item.status))
+  }
   if (options?.urgency) list = list.filter((item) => item.urgency === options.urgency)
   if (options?.severity) list = list.filter((item) => item.severity === options.severity)
   if (options?.type) list = list.filter((item) => item.type === options.type)

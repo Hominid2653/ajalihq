@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { format } from "date-fns"
-import { ArrowRight, ChevronRight, Search, TriangleAlert, UserRound } from "lucide-react"
+import { ArrowRight, ChartNoAxesCombined, ChevronRight, Search, TriangleAlert, UserRound } from "lucide-react"
 
 import { AdminPage, AdminShell } from "@/components/admin/admin-shell"
 import { StatusBadge } from "@/components/admin/status-badge"
@@ -109,11 +109,18 @@ function AdminDashboardPage() {
       title="Dashboard"
       hideBreadcrumbs
       end={
-        <Button variant="ghost" size="icon" className="size-9" asChild>
-          <Link to="/admin/incidents" aria-label="Search incidents">
-            <Search className="size-4" />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="size-9" asChild>
+            <Link to="/admin/analytics" aria-label="Open analytics">
+              <ChartNoAxesCombined className="size-4" />
+            </Link>
+          </Button>
+          <Button variant="ghost" size="icon" className="size-9" asChild>
+            <Link to="/admin/incidents" aria-label="Search incidents">
+              <Search className="size-4" />
+            </Link>
+          </Button>
+        </div>
       }
     >
       <AdminPage wide className="flex flex-col gap-8 pb-4">
@@ -255,7 +262,7 @@ function AdminDashboardPage() {
                   : null}
               </span>
               <Link
-                to="/admin/incidents?status=IN_PROGRESS"
+                to="/admin/incidents?ops=active"
                 className="font-semibold text-[var(--ajali-primary)] hover:underline"
               >
                 View all

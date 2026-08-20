@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom"
 import { format, formatDistanceToNow } from "date-fns"
 
 import { AdminPage, AdminShell } from "@/components/admin/admin-shell"
+import { QuickCreateIncidentButton } from "@/components/admin/quick-create-incident"
 import {
   SeverityBadge,
   StatusBadge,
@@ -72,6 +73,7 @@ function AdminIncidentsPage() {
   const [error, setError] = useState("")
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState(() => {
+    if (searchParams.get("ops") === "active") return "active"
     const value = searchParams.get("status")
     return value && statuses.includes(value as IncidentStatus) ? value : "all"
   })
@@ -94,7 +96,14 @@ function AdminIncidentsPage() {
     setError("")
     const query = {
       search: search.trim() || undefined,
-      status: status === "all" ? undefined : (status as IncidentStatus),
+      status:
+        status === "all" || status === "active"
+          ? undefined
+          : (status as IncidentStatus),
+      statusIn:
+        status === "active"
+          ? (["VERIFIED", "IN_PROGRESS"] as IncidentStatus[])
+          : undefined,
       urgency: urgency === "all" ? undefined : (urgency as IncidentUrgency),
       severity: severity === "all" ? undefined : (severity as IncidentSeverity),
       type: type === "all" ? undefined : (type as IncidentType),
@@ -164,11 +173,7 @@ function AdminIncidentsPage() {
   return (
     <AdminShell
       title="Incident inbox"
-      end={
-        <Button asChild>
-          <Link to="/admin/incidents/new">Create incident</Link>
-        </Button>
-      }
+      end={<QuickCreateIncidentButton />}
     >
       <AdminPage wide className="space-y-4">
         {error ? <p className="rounded-lg bg-destructive/10 p-4 text-destructive">{error}</p> : null}
@@ -186,6 +191,7 @@ function AdminIncidentsPage() {
             <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="active">Active ops (verified + in progress)</SelectItem>
               {statuses.map((value) => (
                 <SelectItem key={value} value={value}>{value.replace("_", " ")}</SelectItem>
               ))}

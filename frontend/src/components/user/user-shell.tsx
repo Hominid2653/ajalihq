@@ -20,7 +20,7 @@ const SIDEBAR_KEY = "ajali-sidebar-expanded"
 
 const tabs = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/reports",   label: "Reports",   icon: List },
+  { to: "/incidents", label: "Incidents", icon: List },
   { to: "/map",       label: "Map",        icon: Map },
   { to: "/account",   label: "Account",    icon: UserRound },
 ]

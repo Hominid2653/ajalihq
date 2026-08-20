@@ -3,9 +3,11 @@ import { Link } from "react-router-dom"
 import { ArrowRight } from "lucide-react"
 
 import { RoleGuard } from "@/components/auth/role-guard"
+import { ActiveReportStatus } from "@/components/user/active-report-status"
 import { EmergencyReportButton } from "@/components/user/emergency-report-button"
 import { UserShell } from "@/components/user/user-shell"
 import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ROLES } from "@/lib/rbac"
 import {
   fetchMyIncidents,
@@ -18,25 +20,24 @@ const NAIROBI: [number, number] = [36.8172, -1.2864]
 
 function DashboardPage() {
   const { user } = useAuth()
-  const [mapPins, setMapPins] = useState<
-    (Incident & { lat: number; lng: number })[]
-  >([])
+  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
+    setLoading(true)
     fetchMyIncidents(user.id)
-      .then((list) =>
-        setMapPins(
-          list.filter(
-            (i): i is Incident & { lat: number; lng: number } =>
-              isActiveStatus(i.status) && i.lat !== null && i.lng !== null
-          )
-        )
-      )
-      .catch(() => setMapPins([]))
+      .then(setIncidents)
+      .catch(() => setIncidents([]))
+      .finally(() => setLoading(false))
   }, [user])
 
   if (!user) return null
+
+  const mapPins = incidents.filter(
+    (i): i is Incident & { lat: number; lng: number } =>
+      isActiveStatus(i.status) && i.lat !== null && i.lng !== null
+  )
 
   return (
     <UserShell
@@ -44,10 +45,10 @@ function DashboardPage() {
       end={
         <div className="flex items-center gap-3">
           <Link
-            to="/reports"
+            to="/incidents"
             className="hidden text-sm font-semibold text-primary hover:underline sm:inline"
           >
-            My reports
+            My incidents
           </Link>
           <RoleGuard roles={[ROLES.ADMIN]}>
             <Link
@@ -94,14 +95,21 @@ function DashboardPage() {
         </Link>
       </section>
 
-      {/* Emergency report CTA — primary dashboard action */}
-      <section className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 py-10 md:py-14">
+      {/* Emergency CTA + active report status */}
+      <section className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-8 px-4 py-8 md:py-12">
         <EmergencyReportButton />
+
+        {loading ? (
+          <Skeleton className="h-36 w-full max-w-md rounded-2xl" />
+        ) : (
+          <ActiveReportStatus incidents={incidents} />
+        )}
+
         <Link
-          to="/reports"
-          className="mt-8 text-sm font-semibold text-primary hover:underline sm:hidden"
+          to="/incidents"
+          className="text-sm font-semibold text-primary hover:underline sm:hidden"
         >
-          View my reports →
+          View my incidents →
         </Link>
       </section>
     </UserShell>

@@ -24,7 +24,7 @@ function AddReportButton({ searchHref, className }: AddReportButtonProps) {
         size="lg"
         asChild
       >
-        <Link to="/report">
+        <Link to="/incidents/new">
           <Plus data-icon="inline-start" className="size-5" />
           <span className="md:hidden">Report</span>
           <span className="hidden md:inline">Report incident</span>

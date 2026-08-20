@@ -10,7 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
 import { Separator } from "@/components/ui/separator"
 import { ROLES } from "@/lib/rbac"
-import { fetchMyIncidents, type Incident } from "@/lib/incidents"
+import {
+  fetchMyIncidents,
+  isActiveStatus,
+  isUnsetStatus,
+  type Incident,
+} from "@/lib/incidents"
 import { useAuth } from "@/store/hooks"
 import { cn } from "@/lib/utils"
 
@@ -34,10 +39,10 @@ function DashboardPage() {
   if (!user) return null
 
   const recent = incidents.slice(0, 10)
-  const mapPins = incidents.filter((i) => {
-    const s = (i.status ?? "").toLowerCase()
-    return s !== "resolved" && s !== "closed"
-  })
+  const mapPins = incidents.filter(
+    (i): i is Incident & { lat: number; lng: number } =>
+      isActiveStatus(i.status) && i.lat !== null && i.lng !== null
+  )
 
   return (
     <UserShell
@@ -139,13 +144,11 @@ function DashboardPage() {
           { label: "Total", value: incidents.length },
           {
             label: "Pending",
-            value: incidents.filter((i) =>
-              ["reported", "pending", "new"].includes((i.status ?? "").toLowerCase())
-            ).length,
+            value: incidents.filter((i) => isUnsetStatus(i.status)).length,
           },
           {
             label: "Resolved",
-            value: incidents.filter((i) => i.status === "resolved").length,
+            value: incidents.filter((i) => i.status === "RESOLVED").length,
           },
         ].map(({ label, value }) => (
           <Card key={label} size="sm" className="text-center">

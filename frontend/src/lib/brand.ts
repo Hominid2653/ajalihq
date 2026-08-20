@@ -45,7 +45,7 @@ export const authCardClass =
 export function statusColourClass(status: string): string {
   const s = (status ?? "").toLowerCase().replace(/\s+/g, "_")
   if (s === "verified")                     return "status-verified"
-  if (s === "under_investigation" || s === "progress") return "status-progress"
+  if (s === "in_progress")                  return "status-progress"
   if (s === "resolved")                     return "status-resolved"
   if (s === "closed")                       return "status-closed"
   return "status-pending" // default: pending / unset

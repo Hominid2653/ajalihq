@@ -12,7 +12,7 @@ type RoleGuardProps = {
   fallback?: ReactNode
 }
 
-/** Conditionally render children based on the current user's role. */
+/** Admin routes use ProtectedRoute; RoleGuard remains for nested section guards. */
 function RoleGuard({ roles, children, fallback = null }: RoleGuardProps) {
   const { user } = useAuth()
   if (!hasAnyRole(user, roles)) return fallback

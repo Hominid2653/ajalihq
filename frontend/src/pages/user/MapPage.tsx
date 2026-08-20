@@ -12,21 +12,17 @@ import {
   MarkerContent,
   MarkerPopup,
 } from "@/components/ui/map"
-import { fetchAllIncidents, statusLabel, type Incident } from "@/lib/incidents"
+import { statusLabel, type Incident } from "@/lib/incidents"
 import { cn } from "@/lib/utils"
+import { incidentApi } from "@/services/incident-api"
 
 /** Nairobi CBD — default map center */
 const NAIROBI: [number, number] = [36.8172, -1.2864]
 
-function isActiveIncident(incident: Incident) {
-  const s = (incident.status ?? "").toLowerCase()
-  return s !== "resolved" && s !== "closed"
-}
-
 function markerTone(status: string) {
   const s = (status ?? "").toLowerCase()
   if (s === "verified") return "bg-[var(--status-verified)]"
-  if (s === "investigating" || s === "progress" || s === "under_investigation") {
+  if (s === "in_progress") {
     return "bg-[var(--status-progress)]"
   }
   if (s === "resolved") return "bg-[var(--status-resolved)]"
@@ -38,13 +34,17 @@ function MapPage() {
   const [incidents, setIncidents] = useState<Incident[]>([])
 
   useEffect(() => {
-    fetchAllIncidents()
+    incidentApi.getActive()
       .then(setIncidents)
       .catch(() => setIncidents([]))
   }, [])
 
   const active = useMemo(
-    () => incidents.filter(isActiveIncident),
+    () =>
+      incidents.filter(
+        (incident): incident is Incident & { lat: number; lng: number } =>
+          incident.lat !== null && incident.lng !== null
+      ),
     [incidents]
   )
 

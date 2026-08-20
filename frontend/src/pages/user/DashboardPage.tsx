@@ -6,9 +6,13 @@ import { AddReportButton } from "@/components/user/add-report-button"
 import { ReportRow } from "@/components/user/report-row"
 import { UserShell } from "@/components/user/user-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
 import { Separator } from "@/components/ui/separator"
 import { getSession } from "@/lib/auth"
 import { fetchIncidents, type Incident } from "@/lib/incidents"
+import { cn } from "@/lib/utils"
+
+const NAIROBI: [number, number] = [36.8172, -1.2864]
 
 function DashboardPage() {
   const session = getSession()
@@ -24,6 +28,10 @@ function DashboardPage() {
   if (!session) return null
 
   const recent = incidents.slice(0, 10)
+  const mapPins = incidents.filter((i) => {
+    const s = (i.status ?? "").toLowerCase()
+    return s !== "resolved" && s !== "closed"
+  })
 
   return (
     <UserShell
@@ -36,16 +44,36 @@ function DashboardPage() {
         ) : undefined
       }
     >
-      {/* Hero / map thumbnail */}
+      {/* Hero / live map preview */}
       <section className="relative h-[200px] overflow-hidden bg-muted sm:h-[240px] md:h-[min(42vh,420px)] md:min-h-[280px]">
-        <img src="/splash.png" alt="" className="size-full object-cover" />
-        <div
-          aria-hidden="true"
-          className="absolute top-1/2 left-1/2 size-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/20 ring-1 ring-white/30 sm:size-44"
-        />
+        <Map
+          center={NAIROBI}
+          zoom={11.5}
+          theme="light"
+          interactive={false}
+          attributionControl={false}
+          className="absolute inset-0 size-full rounded-none pointer-events-none"
+        >
+          {mapPins.map((incident) => (
+            <MapMarker
+              key={incident.id}
+              longitude={incident.lng}
+              latitude={incident.lat}
+            >
+              <MarkerContent>
+                <span
+                  className={cn(
+                    "block size-2.5 rounded-full border-2 border-white bg-[var(--ajali-primary)] shadow-sm"
+                  )}
+                  aria-hidden
+                />
+              </MarkerContent>
+            </MapMarker>
+          ))}
+        </Map>
         <Link
           to="/map"
-          className="absolute right-4 bottom-4 flex size-11 items-center justify-center rounded-full bg-[var(--ajali-primary)] text-white shadow-elevated transition-colors hover:bg-[var(--ajali-primary-hover)]"
+          className="absolute right-4 bottom-4 z-10 flex size-11 items-center justify-center rounded-full bg-[var(--ajali-primary)] text-white shadow-elevated transition-colors hover:bg-[var(--ajali-primary-hover)]"
           aria-label="Open map"
         >
           <ArrowRight className="size-5" />

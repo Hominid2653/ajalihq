@@ -13,14 +13,14 @@ function AddReportButton({ searchHref, className }: AddReportButtonProps) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute z-10 flex items-center gap-3 px-4",
+        "pointer-events-none absolute z-10 flex items-center gap-2 px-4",
         "inset-x-0 bottom-20 justify-center",
         "md:inset-x-auto md:right-6 md:bottom-6 md:justify-end",
         className
       )}
     >
       <Button
-        className="pointer-events-auto h-12 rounded-full px-6 text-base font-bold shadow-md"
+        className="pointer-events-auto h-12 rounded-full px-5 text-base font-bold shadow-lg shadow-primary/25"
         size="lg"
         asChild
       >
@@ -32,7 +32,7 @@ function AddReportButton({ searchHref, className }: AddReportButtonProps) {
       </Button>
       {searchHref ? (
         <Button
-          className="pointer-events-auto hidden size-12 rounded-full shadow-md md:inline-flex"
+          className="pointer-events-auto hidden size-12 rounded-full shadow-lg shadow-primary/25 md:inline-flex"
           size="icon"
           asChild
         >

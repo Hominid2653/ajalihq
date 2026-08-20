@@ -1,9 +1,21 @@
 import { Link } from "react-router-dom"
 import { format } from "date-fns"
 
-import { reportCardClass } from "@/lib/brand"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { isUnsetStatus, statusLabel, type Incident } from "@/lib/incidents"
 import { cn } from "@/lib/utils"
+
+function statusVariant(
+  status: string
+): "default" | "secondary" | "outline" | "destructive" | "ghost" | "link" {
+  const s = (status ?? "").toLowerCase()
+  if (s === "verified")                                return "secondary"
+  if (s === "under_investigation" || s === "progress") return "outline"
+  if (s === "resolved")                                return "default"
+  if (s === "closed")                                  return "outline"
+  return "destructive"
+}
 
 function ReportRow({ incident }: { incident: Incident }) {
   const unset = isUnsetStatus(incident.status)
@@ -12,30 +24,31 @@ function ReportRow({ incident }: { incident: Incident }) {
     : "—"
 
   return (
-    <Link
-      to="/coming-soon"
-      className={cn(
-        "flex items-start justify-between gap-4 px-4 py-3",
-        reportCardClass
-      )}
-    >
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-neutral-500">
-          {incident.title}
-        </p>
-        <p className="truncate text-sm text-neutral-500">{incident.location}</p>
-      </div>
-      <div className="shrink-0 text-right">
-        <p className="text-sm text-neutral-500">{when}</p>
-        <p
-          className={cn(
-            "text-sm font-semibold",
-            unset ? "text-red-600" : "text-neutral-700"
-          )}
-        >
-          {statusLabel(incident.status)}
-        </p>
-      </div>
+    <Link to="/coming-soon" className="block focus-visible:outline-none">
+      <Card className="cursor-pointer bg-[var(--ajali-cream)] ring-border/50 transition-shadow hover:shadow-[var(--shadow-card)] focus-within:ring-2 focus-within:ring-ring">
+        <CardContent className="flex items-start justify-between gap-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {incident.title}
+            </p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {incident.location}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <p className="text-xs text-muted-foreground">{when}</p>
+            <Badge
+              variant={statusVariant(incident.status)}
+              className={cn(
+                "capitalize text-[10px]",
+                unset && "border-destructive/30 bg-destructive/10 text-destructive"
+              )}
+            >
+              {statusLabel(incident.status)}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
     </Link>
   )
 }

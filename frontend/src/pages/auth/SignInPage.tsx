@@ -6,36 +6,27 @@ import { Logomark } from "@/components/brand/logomark"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
 import { findUserByEmail, setPendingEmail, setSession } from "@/lib/auth"
 
 function SignInPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const from =
-    (location.state as { from?: string } | null)?.from ?? "/dashboard"
+  const from = (location.state as { from?: string } | null)?.from ?? "/dashboard"
 
-  const [email, setEmail] = useState("amina@ajalihq.test")
+  const [email,   setEmail]   = useState("amina@ajalihq.test")
   const [password, setPassword] = useState("password")
-  const [error, setError] = useState<string | null>(null)
+  const [error,   setError]   = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
     setPending(true)
-
     try {
-      if (!password.trim()) {
-        setError("Enter your password.")
-        return
-      }
-
+      if (!password.trim()) { setError("Enter your password."); return }
       const user = await findUserByEmail(email)
-      if (!user) {
-        setError("No account found for that email.")
-        return
-      }
-
+      if (!user) { setError("No account found for that email."); return }
       setSession(user)
       navigate(from, { replace: true })
     } finally {
@@ -45,45 +36,41 @@ function SignInPage() {
 
   async function sendLoginLink() {
     setError(null)
-    if (!email.trim()) {
-      setError("Enter your email to receive a login link.")
-      return
-    }
-
+    if (!email.trim()) { setError("Enter your email to receive a login link."); return }
     const user = await findUserByEmail(email)
-    if (!user) {
-      setError("No account found for that email.")
-      return
-    }
-
+    if (!user) { setError("No account found for that email."); return }
     setPendingEmail(email.trim())
     navigate("/signin/confirm")
   }
 
   return (
     <AuthShell>
-      <div className="flex flex-col items-center text-center">
-        <Logomark className="mb-6 h-16" />
-        <p className="max-w-xs text-sm font-semibold text-pretty text-black">
+      {/* Logo + tagline */}
+      <div className="mb-7 flex flex-col items-center gap-3 text-center">
+        <Logomark className="h-16" />
+        <p className="max-w-xs text-sm font-medium text-muted-foreground">
           Enter your email and we&apos;ll send you a login link.
         </p>
       </div>
 
-      <form className="mt-8 flex flex-col gap-4" onSubmit={onSubmit}>
-        <div className="grid gap-2 text-left">
+      <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+        {/* Email */}
+        <div className="grid gap-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             type="email"
             autoComplete="email"
             required
-            placeholder="Email"
-            className="h-11 bg-white"
+            placeholder="you@example.com"
+            className="h-11 bg-[var(--ajali-surface)]"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-        <div className="grid gap-2 text-left">
+
+        {/* Password */}
+        <div className="grid gap-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             <Link
@@ -97,34 +84,47 @@ function SignInPage() {
             id="password"
             type="password"
             autoComplete="current-password"
-            placeholder="Password"
-            className="h-11 bg-white"
+            placeholder="••••••••"
+            className="h-11 bg-[var(--ajali-surface)]"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
           />
         </div>
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
 
+        {/* Primary CTA */}
         <Button
-          className="h-12 w-full text-base font-bold"
-          size="lg"
+          className="h-11 w-full text-sm font-bold"
           type="submit"
           disabled={pending}
         >
           Sign in
         </Button>
-        <button
-          className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-neutral-400 bg-white text-base font-bold text-black transition-colors hover:border-primary hover:bg-primary hover:text-white disabled:pointer-events-none disabled:opacity-50"
+
+        <div className="flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground">or</span>
+          <Separator className="flex-1" />
+        </div>
+
+        {/* Magic link */}
+        <Button
+          variant="outline"
+          className="h-11 w-full border-border bg-[var(--ajali-surface)] text-sm font-bold text-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
           type="button"
           disabled={pending}
           onClick={() => void sendLoginLink()}
         >
           Send login link
-        </button>
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-neutral-700">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link className="font-bold text-primary hover:underline" to="/signup">
           Sign up

@@ -4,7 +4,7 @@
 @import "@fontsource-variable/geist";
 
 /* ─────────────────────────────────────────────
-   Ajali! Design System — CSS Custom Properties
+   Ajali! Design System - CSS Custom Properties
    Maps Figma semantic tokens → Tailwind v4
    ───────────────────────────────────────────── */
 
@@ -84,7 +84,7 @@
     --color-error:   var(--error);
     --color-info:    var(--info);
 
-    /* Radii — aligned to Figma spec */
+    /* Radii - aligned to Figma spec */
     --radius-sm:  0.375rem;
     --radius-md:  0.5rem;
     --radius-lg:  0.75rem;
@@ -112,7 +112,7 @@
 }
 
 /* ═══════════════════════════════════════════════
-   :root — Ajali! Light Theme
+   :root - Ajali! Light Theme
    ═══════════════════════════════════════════════ */
 :root {
     /* ── Brand ── */
@@ -192,7 +192,7 @@
 }
 
 /* ═══════════════════════════════════════════════
-   .dark — preserve Ajali green on dark surfaces
+   .dark - preserve Ajali green on dark surfaces
    (used by auth splash only; app is forced light)
    ═══════════════════════════════════════════════ */
 .dark {
@@ -287,7 +287,7 @@
     .pb-safe { padding-bottom: max(var(--bottom-nav-height), env(safe-area-inset-bottom, var(--bottom-nav-height))); }
     .h-header-mobile { height: var(--header-height-mobile); }
 
-    /* Emergency report CTA — expanding ripples */
+    /* Emergency report CTA - expanding ripples */
     .emergency-ripple {
         position: absolute;
         left: 50%;

@@ -68,7 +68,7 @@ function ReportsPage() {
       }
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 lg:px-10">
-        {/* Summary — moved from dashboard */}
+        {/* Summary - moved from dashboard */}
         <section className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { label: "Total", value: stats.total },

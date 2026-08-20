@@ -233,11 +233,11 @@ function AdminIncidentReviewPage() {
       return
     }
     if (!notifySkip && notifySms && !incident.reporterPhone) {
-      toast.error("Cannot send SMS — no reporter phone on file.")
+      toast.error("Cannot send SMS - no reporter phone on file.")
       return
     }
     if (!notifySkip && notifyEmail && !incident.reporterEmail) {
-      toast.error("Cannot send email — no reporter email on file.")
+      toast.error("Cannot send email - no reporter email on file.")
       return
     }
     setBusy(true)
@@ -410,8 +410,8 @@ function AdminIncidentReviewPage() {
                     <dl className="grid gap-3 text-sm sm:grid-cols-2">
                       <div><dt className="text-muted-foreground">Type</dt><dd className="font-medium">{typeLabel(incident.type)}</dd></div>
                       <div><dt className="text-muted-foreground">Location</dt><dd className="font-medium">{incident.location}</dd></div>
-                      <div><dt className="text-muted-foreground">Latitude</dt><dd className="font-medium">{incident.lat ?? "—"}</dd></div>
-                      <div><dt className="text-muted-foreground">Longitude</dt><dd className="font-medium">{incident.lng ?? "—"}</dd></div>
+                      <div><dt className="text-muted-foreground">Latitude</dt><dd className="font-medium">{incident.lat ?? "-"}</dd></div>
+                      <div><dt className="text-muted-foreground">Longitude</dt><dd className="font-medium">{incident.lng ?? "-"}</dd></div>
                     </dl>
                     {incident.lat !== null && incident.lng !== null ? (
                       <div className="h-44 overflow-hidden rounded-lg">
@@ -537,7 +537,7 @@ function AdminIncidentReviewPage() {
                   <Card id="resolution">
                     <CardHeader><CardTitle>Resolution</CardTitle></CardHeader>
                     <CardContent className="space-y-2 text-sm">
-                      <p><span className="text-muted-foreground">Outcome:</span> {incident.resolutionOutcome ? resolutionOutcomeLabel(incident.resolutionOutcome) : "—"}</p>
+                      <p><span className="text-muted-foreground">Outcome:</span> {incident.resolutionOutcome ? resolutionOutcomeLabel(incident.resolutionOutcome) : "-"}</p>
                       <p><span className="text-muted-foreground">Summary:</span> {incident.resolutionSummary}</p>
                       {incident.resolutionNotes ? <p><span className="text-muted-foreground">Notes:</span> {incident.resolutionNotes}</p> : null}
                       <p className="text-xs text-muted-foreground">

@@ -27,7 +27,7 @@ function AuthShell({ children, className, wide = false }: AuthShellProps) {
         className="pointer-events-none absolute inset-0 bg-[#0a0612]/50"
       />
 
-      {/* Auth card — white surface, uses semantic tokens */}
+      {/* Auth card - white surface, uses semantic tokens */}
       <div
         className={cn(
           "relative z-10 w-full rounded-[var(--radius-2xl)] bg-[var(--ajali-surface)] p-8 text-foreground shadow-elevated ring-1 ring-border",

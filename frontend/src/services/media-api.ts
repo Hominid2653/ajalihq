@@ -8,7 +8,7 @@ import type { IncidentMedia } from "@/types/incident"
 
 export type MediaUploadInput = {
   file: File
-  /** Preview-only URL (blob). Never persisted — upload converts to durable storage. */
+  /** Preview-only URL (blob). Never persisted - upload converts to durable storage. */
   previewUrl?: string
 }
 

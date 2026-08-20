@@ -2,6 +2,7 @@ import { incidentApi } from "@/services/incident-api"
 import {
   severityLabel,
   typeLabel,
+  urgencyLabel,
   type IncidentSeverity,
   type IncidentType,
   type IncidentUrgency,
@@ -44,6 +45,13 @@ export const INCIDENT_SEVERITIES: { value: IncidentSeverity; label: string }[] =
   { value: "MODERATE", label: severityLabel("MODERATE") },
   { value: "MAJOR", label: severityLabel("MAJOR") },
   { value: "CRITICAL", label: severityLabel("CRITICAL") },
+]
+
+export const INCIDENT_URGENCIES: { value: IncidentUrgency; label: string }[] = [
+  { value: "LOW", label: urgencyLabel("LOW") },
+  { value: "MEDIUM", label: urgencyLabel("MEDIUM") },
+  { value: "HIGH", label: urgencyLabel("HIGH") },
+  { value: "CRITICAL", label: urgencyLabel("CRITICAL") },
 ]
 
 export const INCIDENT_STATUSES = [
@@ -99,12 +107,14 @@ export async function createIncident(input: {
   reporterName?: string
   reporterEmail?: string
   reporterPhone?: string
+  preferredContactMethod?: import("@/types/incident").PreferredContactMethod
 }): Promise<Incident> {
   return incidentApi.create(
     {
       ...input,
       urgency: input.urgency ?? "MEDIUM",
       severity: input.severity ?? "MODERATE",
+      preferredContactMethod: input.preferredContactMethod ?? "PHONE",
     },
     {
       id: input.userId,
@@ -119,10 +129,14 @@ export async function updateMyIncident(
     title?: string
     description?: string
     type?: IncidentType
+    urgency?: IncidentUrgency
     severity?: IncidentSeverity
     location?: string
     lat?: number | null
     lng?: number | null
+    reporterPhone?: string
+    reporterEmail?: string
+    preferredContactMethod?: import("@/types/incident").PreferredContactMethod
   },
   actor: { id: string; name: string }
 ): Promise<Incident> {
@@ -137,7 +151,7 @@ export async function updateMyIncident(
   return incidentApi.update(id, patch, actor)
 }
 
-/** Soft withdraw — closes a PENDING report (keeps audit trail; no hard delete). */
+/** Soft withdraw - closes a PENDING report (keeps audit trail; no hard delete). */
 export async function withdrawMyIncident(
   id: string,
   actor: { id: string; name: string }

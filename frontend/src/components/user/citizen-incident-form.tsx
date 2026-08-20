@@ -21,16 +21,24 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   INCIDENT_SEVERITIES,
   INCIDENT_TYPES,
+  INCIDENT_URGENCIES,
   type IncidentSeverity,
   type IncidentType,
+  type IncidentUrgency,
 } from "@/lib/incidents"
+import type { PreferredContactMethod } from "@/types/incident"
 
+/** Same shape as admin CreateIncidentInput citizen-facing fields. */
 export type CitizenIncidentFormValues = {
   title: string
   description: string
   type: IncidentType
+  urgency: IncidentUrgency
   severity: IncidentSeverity
   location: string
+  reporterPhone: string
+  reporterEmail: string
+  preferredContactMethod: PreferredContactMethod
 }
 
 type FormErrors = Partial<Record<keyof CitizenIncidentFormValues, string>>
@@ -41,8 +49,12 @@ const EMPTY_VALUES: CitizenIncidentFormValues = {
   title: "",
   description: "",
   type: "accident",
+  urgency: "MEDIUM",
   severity: "MODERATE",
   location: "",
+  reporterPhone: "",
+  reporterEmail: "",
+  preferredContactMethod: "PHONE",
 }
 
 function validate(values: CitizenIncidentFormValues): FormErrors {
@@ -50,6 +62,7 @@ function validate(values: CitizenIncidentFormValues): FormErrors {
   if (!values.title.trim()) errors.title = "Title is required."
   if (!values.location.trim()) errors.location = "Location is required."
   if (!values.type) errors.type = "Select an incident type."
+  if (!values.urgency) errors.urgency = "Select urgency."
   if (!values.severity) errors.severity = "Select a severity level."
   if (!values.description.trim()) {
     errors.description = "Description is required."
@@ -61,7 +74,7 @@ function validate(values: CitizenIncidentFormValues): FormErrors {
 
 type CitizenIncidentFormProps = {
   mode: "create" | "edit"
-  initialValues?: CitizenIncidentFormValues
+  initialValues?: Partial<CitizenIncidentFormValues>
   onSubmit: (values: CitizenIncidentFormValues) => Promise<void>
   submitLabel?: string
 }
@@ -72,9 +85,10 @@ function CitizenIncidentForm({
   onSubmit,
   submitLabel,
 }: CitizenIncidentFormProps) {
-  const [values, setValues] = useState<CitizenIncidentFormValues>(
-    initialValues ?? EMPTY_VALUES
-  )
+  const [values, setValues] = useState<CitizenIncidentFormValues>({
+    ...EMPTY_VALUES,
+    ...initialValues,
+  })
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -108,53 +122,81 @@ function CitizenIncidentForm({
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       <FieldGroup>
-        <Field data-invalid={!!errors.type}>
-          <FieldLabel htmlFor="type">Incident type</FieldLabel>
-          <FieldContent>
-            <Select
-              value={values.type}
-              onValueChange={(value) => updateField("type", value as IncidentType)}
-            >
-              <SelectTrigger id="type" className="h-11 w-full bg-[var(--ajali-surface)]">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                {INCIDENT_TYPES.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FieldError errors={errors.type ? [{ message: errors.type }] : []} />
-          </FieldContent>
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field data-invalid={!!errors.type}>
+            <FieldLabel htmlFor="type">Incident type</FieldLabel>
+            <FieldContent>
+              <Select
+                value={values.type}
+                onValueChange={(value) => updateField("type", value as IncidentType)}
+              >
+                <SelectTrigger id="type" className="h-11 w-full bg-[var(--ajali-surface)]">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {INCIDENT_TYPES.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError errors={errors.type ? [{ message: errors.type }] : []} />
+            </FieldContent>
+          </Field>
 
-        <Field data-invalid={!!errors.severity}>
-          <FieldLabel htmlFor="severity">Severity</FieldLabel>
-          <FieldContent>
-            <Select
-              value={values.severity}
-              onValueChange={(value) =>
-                updateField("severity", value as IncidentSeverity)
-              }
-            >
-              <SelectTrigger id="severity" className="h-11 w-full bg-[var(--ajali-surface)]">
-                <SelectValue placeholder="Select severity" />
-              </SelectTrigger>
-              <SelectContent>
-                {INCIDENT_SEVERITIES.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FieldError
-              errors={errors.severity ? [{ message: errors.severity }] : []}
-            />
-          </FieldContent>
-        </Field>
+          <Field data-invalid={!!errors.urgency}>
+            <FieldLabel htmlFor="urgency">Urgency</FieldLabel>
+            <FieldContent>
+              <Select
+                value={values.urgency}
+                onValueChange={(value) =>
+                  updateField("urgency", value as IncidentUrgency)
+                }
+              >
+                <SelectTrigger id="urgency" className="h-11 w-full bg-[var(--ajali-surface)]">
+                  <SelectValue placeholder="Select urgency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {INCIDENT_URGENCIES.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError
+                errors={errors.urgency ? [{ message: errors.urgency }] : []}
+              />
+            </FieldContent>
+          </Field>
+
+          <Field data-invalid={!!errors.severity}>
+            <FieldLabel htmlFor="severity">Severity</FieldLabel>
+            <FieldContent>
+              <Select
+                value={values.severity}
+                onValueChange={(value) =>
+                  updateField("severity", value as IncidentSeverity)
+                }
+              >
+                <SelectTrigger id="severity" className="h-11 w-full bg-[var(--ajali-surface)]">
+                  <SelectValue placeholder="Select severity" />
+                </SelectTrigger>
+                <SelectContent>
+                  {INCIDENT_SEVERITIES.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError
+                errors={errors.severity ? [{ message: errors.severity }] : []}
+              />
+            </FieldContent>
+          </Field>
+        </div>
 
         <Field data-invalid={!!errors.title}>
           <FieldLabel htmlFor="title">Title</FieldLabel>
@@ -201,12 +243,64 @@ function CitizenIncidentForm({
               aria-invalid={!!errors.description}
             />
             <FieldDescription>
-              At least {DESCRIPTION_MIN_LENGTH} characters. Be specific — this is
+              At least {DESCRIPTION_MIN_LENGTH} characters. Be specific; this is
               what responders see first.
             </FieldDescription>
             <FieldError
               errors={errors.description ? [{ message: errors.description }] : []}
             />
+          </FieldContent>
+        </Field>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="reporterPhone">Phone</FieldLabel>
+            <FieldContent>
+              <Input
+                id="reporterPhone"
+                className="h-11 bg-[var(--ajali-surface)]"
+                value={values.reporterPhone}
+                onChange={(e) => updateField("reporterPhone", e.target.value)}
+                placeholder="+254…"
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="reporterEmail">Email</FieldLabel>
+            <FieldContent>
+              <Input
+                id="reporterEmail"
+                type="email"
+                className="h-11 bg-[var(--ajali-surface)]"
+                value={values.reporterEmail}
+                onChange={(e) => updateField("reporterEmail", e.target.value)}
+                placeholder="you@example.com"
+              />
+            </FieldContent>
+          </Field>
+        </div>
+
+        <Field>
+          <FieldLabel htmlFor="preferredContact">Preferred contact</FieldLabel>
+          <FieldContent>
+            <Select
+              value={values.preferredContactMethod}
+              onValueChange={(value) =>
+                updateField(
+                  "preferredContactMethod",
+                  value as PreferredContactMethod
+                )
+              }
+            >
+              <SelectTrigger id="preferredContact" className="h-11 w-full bg-[var(--ajali-surface)]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PHONE">Phone</SelectItem>
+                <SelectItem value="EMAIL">Email</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </FieldContent>
         </Field>
 

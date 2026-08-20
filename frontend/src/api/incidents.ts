@@ -1,6 +1,7 @@
 /**
  * Citizen incident reporting API facade.
  * Delegates to lib/incidents → services → mock api.ts (Flask-ready later).
+ * Payload fields match admin CreateIncidentInput / Incident model.
  */
 import {
   createIncident as createIncidentRecord,
@@ -12,15 +13,23 @@ import {
   type Incident,
   type IncidentSeverity,
   type IncidentType,
+  type IncidentUrgency,
 } from "@/lib/incidents"
 import { readSession } from "@/lib/auth-storage"
+import type { PreferredContactMethod } from "@/types/incident"
 
 export type IncidentInput = {
   title: string
   description: string
   type: IncidentType
+  urgency: IncidentUrgency
   severity: IncidentSeverity
   location: string
+  reporterPhone?: string
+  reporterEmail?: string
+  preferredContactMethod?: PreferredContactMethod
+  lat?: number | null
+  lng?: number | null
 }
 
 function requireActor() {
@@ -56,11 +65,15 @@ export async function createIncident(input: IncidentInput): Promise<Incident> {
     description: input.description,
     location: input.location,
     type: input.type,
+    urgency: input.urgency,
     severity: input.severity,
+    lat: input.lat ?? null,
+    lng: input.lng ?? null,
     userId: actor.id,
     reporterName: actor.name,
-    reporterEmail: actor.email,
-    reporterPhone: actor.phone,
+    reporterEmail: input.reporterEmail?.trim() || actor.email,
+    reporterPhone: input.reporterPhone?.trim() || actor.phone,
+    preferredContactMethod: input.preferredContactMethod ?? "PHONE",
   })
 }
 
@@ -76,7 +89,13 @@ export async function updateIncident(
       description: input.description,
       location: input.location,
       type: input.type,
+      urgency: input.urgency,
       severity: input.severity,
+      lat: input.lat,
+      lng: input.lng,
+      reporterPhone: input.reporterPhone,
+      reporterEmail: input.reporterEmail,
+      preferredContactMethod: input.preferredContactMethod,
     },
     { id: actor.id, name: actor.name }
   )

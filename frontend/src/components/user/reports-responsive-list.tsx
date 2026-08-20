@@ -17,6 +17,7 @@ import {
   severityLabel,
   statusLabel,
   typeLabel,
+  urgencyLabel,
   type Incident,
 } from "@/lib/incidents"
 import { cn } from "@/lib/utils"
@@ -32,7 +33,7 @@ function statusVariant(
   return "destructive"
 }
 
-/** Mobile / small screens — card stack */
+/** Mobile / small screens: card stack */
 function ReportsMobileList({ incidents }: { incidents: Incident[] }) {
   return (
     <div className="grid gap-2 md:hidden">
@@ -43,7 +44,7 @@ function ReportsMobileList({ incidents }: { incidents: Incident[] }) {
   )
 }
 
-/** Desktop / tablet — data table */
+/** Desktop / tablet: data table (aligned with admin inbox columns) */
 function ReportsDesktopTable({ incidents }: { incidents: Incident[] }) {
   return (
     <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
@@ -53,6 +54,7 @@ function ReportsDesktopTable({ incidents }: { incidents: Incident[] }) {
             <TableHead>Reference</TableHead>
             <TableHead>Title</TableHead>
             <TableHead className="hidden lg:table-cell">Type</TableHead>
+            <TableHead className="hidden xl:table-cell">Urgency</TableHead>
             <TableHead className="hidden xl:table-cell">Severity</TableHead>
             <TableHead>Location</TableHead>
             <TableHead>Status</TableHead>
@@ -80,6 +82,9 @@ function ReportsDesktopTable({ incidents }: { incidents: Incident[] }) {
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
                   {typeLabel(incident.type)}
+                </TableCell>
+                <TableCell className="hidden xl:table-cell">
+                  {urgencyLabel(incident.urgency)}
                 </TableCell>
                 <TableCell className="hidden xl:table-cell">
                   {severityLabel(incident.severity)}

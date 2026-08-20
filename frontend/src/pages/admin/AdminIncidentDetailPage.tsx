@@ -129,7 +129,7 @@ function AdminIncidentDetailPage() {
   const Field = ({ label, value }: { label: string; value?: string }) => (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-sm font-medium">{value || "—"}</dd>
+      <dd className="mt-1 text-sm font-medium">{value || "-"}</dd>
     </div>
   )
 
@@ -193,7 +193,7 @@ function AdminIncidentDetailPage() {
                   <Field label="Type" value={typeLabel(incident.type)} />
                   <Field label="Created" value={format(new Date(incident.createdAt), "d MMM yyyy, h:mm a")} />
                   <Field label="Last updated" value={format(new Date(incident.updatedAt), "d MMM yyyy, h:mm a")} />
-                  <Field label="Archived" value={incident.archived ? `Yes — ${incident.archiveReason}` : "No"} />
+                  <Field label="Archived" value={incident.archived ? `Yes - ${incident.archiveReason}` : "No"} />
                 </dl>
               </CardContent>
             </Card>

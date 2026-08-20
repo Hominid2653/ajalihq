@@ -26,6 +26,10 @@ const authSlice = createSlice({
       state.user = action.payload
       writeSession(action.payload)
     },
+    updateProfile(state, action: PayloadAction<AuthUser>) {
+      state.user = action.payload
+      writeSession(action.payload)
+    },
     logout(state) {
       state.user = null
       removeSession()
@@ -33,7 +37,7 @@ const authSlice = createSlice({
   },
 })
 
-export const { hydrate, login, logout } = authSlice.actions
+export const { hydrate, login, logout, updateProfile } = authSlice.actions
 export const authReducer = authSlice.reducer
 
 /** Selectors */

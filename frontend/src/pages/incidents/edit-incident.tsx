@@ -14,10 +14,12 @@ import { UserShell } from "@/components/user/user-shell"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Incident } from "@/lib/incidents"
+import { useAuth } from "@/store/hooks"
 
 function EditIncidentPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [incident, setIncident] = useState<Incident | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +84,8 @@ function EditIncidentPage() {
             </p>
             <IncidentForm
               mode="edit"
+              incidentId={incident.id}
+              actor={user ? { id: user.id, name: user.name } : null}
               initialValues={{
                 title: incident.title,
                 description: incident.description,
@@ -93,6 +97,8 @@ function EditIncidentPage() {
                 reporterEmail: incident.reporterEmail ?? "",
                 preferredContactMethod:
                   incident.preferredContactMethod ?? "PHONE",
+                lat: incident.lat,
+                lng: incident.lng,
               }}
               onSubmit={handleSubmit}
               submitLabel="Save changes"

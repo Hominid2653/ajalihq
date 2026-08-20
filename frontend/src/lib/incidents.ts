@@ -145,6 +145,10 @@ export async function createIncident(input: {
   reporterEmail?: string
   reporterPhone?: string
   preferredContactMethod?: import("@/types/incident").PreferredContactMethod
+  media?: Pick<
+    import("@/types/incident").IncidentMedia,
+    "kind" | "url" | "name"
+  >[]
 }): Promise<Incident> {
   return incidentApi.create(
     {
@@ -152,6 +156,7 @@ export async function createIncident(input: {
       urgency: input.urgency ?? "MEDIUM",
       severity: input.severity ?? "MODERATE",
       preferredContactMethod: input.preferredContactMethod ?? "PHONE",
+      media: input.media,
     },
     {
       id: input.userId,

@@ -32,6 +32,10 @@ export type IncidentInput = {
   preferredContactMethod?: PreferredContactMethod
   lat?: number | null
   lng?: number | null
+  media?: Pick<
+    import("@/types/incident").IncidentMedia,
+    "kind" | "url" | "name"
+  >[]
 }
 
 function requireActor() {
@@ -92,6 +96,7 @@ export async function createIncident(input: IncidentInput): Promise<Incident> {
     reporterEmail: input.reporterEmail?.trim() || actor.email,
     reporterPhone: input.reporterPhone?.trim() || actor.phone,
     preferredContactMethod: input.preferredContactMethod ?? "PHONE",
+    media: input.media,
   })
 }
 

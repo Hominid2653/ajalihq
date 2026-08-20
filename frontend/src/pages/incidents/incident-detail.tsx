@@ -11,6 +11,7 @@ import {
 } from "@/api/incidents"
 import { SeverityBadge } from "@/components/incidents/severity-badge"
 import { StatusBadge } from "@/components/incidents/status-badge"
+import { IncidentMediaPanel } from "@/components/shared/incident-media-panel"
 import { UserShell } from "@/components/user/user-shell"
 import {
   AlertDialog,
@@ -33,7 +34,39 @@ import {
   urgencyLabel,
   type Incident,
 } from "@/lib/incidents"
+import { mediaApi } from "@/services/media-api"
 import { useAuth } from "@/store/hooks"
+import type { IncidentMedia } from "@/types/incident"
+
+function EvidenceGallery({ incidentId }: { incidentId: string }) {
+  const [media, setMedia] = useState<IncidentMedia[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    mediaApi
+      .list(incidentId)
+      .then((items) => {
+        if (active) setMedia(items)
+      })
+      .catch(() => {
+        if (active) setMedia([])
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [incidentId])
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Loading evidence…</p>
+  }
+
+  return <IncidentMediaPanel media={media} readOnly />
+}
 
 function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -146,6 +179,11 @@ function IncidentDetailPage() {
               <div>
                 <p className="font-medium">Location</p>
                 <p className="text-muted-foreground">{incident.location}</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-medium">Evidence</p>
+                <EvidenceGallery incidentId={incident.id} />
               </div>
               <div>
                 <p className="font-medium">Description</p>

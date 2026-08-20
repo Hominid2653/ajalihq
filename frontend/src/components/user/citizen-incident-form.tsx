@@ -1,5 +1,10 @@
-import { useState, type FormEvent } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { LocateFixed, MapPinned } from "lucide-react"
 
+import {
+  IncidentMediaPanel,
+  type PendingMedia,
+} from "@/components/shared/incident-media-panel"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -10,6 +15,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
 import {
   Select,
   SelectContent,
@@ -26,7 +32,18 @@ import {
   type IncidentType,
   type IncidentUrgency,
 } from "@/lib/incidents"
-import type { PreferredContactMethod } from "@/types/incident"
+import {
+  DEFAULT_MAP_CENTER,
+  filterLocationSuggestions,
+} from "@/lib/locations"
+import { mediaApi, toDurableMediaItems } from "@/services/media-api"
+import type { IncidentMedia, PreferredContactMethod } from "@/types/incident"
+
+export type CitizenEvidenceMedia = {
+  kind: "image" | "video"
+  url: string
+  name: string
+}
 
 /** Same shape as admin CreateIncidentInput citizen-facing fields. */
 export type CitizenIncidentFormValues = {
@@ -39,6 +56,10 @@ export type CitizenIncidentFormValues = {
   reporterPhone: string
   reporterEmail: string
   preferredContactMethod: PreferredContactMethod
+  lat: number | null
+  lng: number | null
+  /** Durable evidence media attached on submit (create). */
+  media: CitizenEvidenceMedia[]
 }
 
 type FormErrors = Partial<Record<keyof CitizenIncidentFormValues, string>>
@@ -55,6 +76,9 @@ const EMPTY_VALUES: CitizenIncidentFormValues = {
   reporterPhone: "",
   reporterEmail: "",
   preferredContactMethod: "PHONE",
+  lat: null,
+  lng: null,
+  media: [],
 }
 
 function validate(values: CitizenIncidentFormValues): FormErrors {
@@ -69,6 +93,10 @@ function validate(values: CitizenIncidentFormValues): FormErrors {
   } else if (values.description.trim().length < DESCRIPTION_MIN_LENGTH) {
     errors.description = `Description should be at least ${DESCRIPTION_MIN_LENGTH} characters.`
   }
+  if (values.lat === null || values.lng === null) {
+    errors.lat =
+      "Pin the location on the map, search a place, or use your current location."
+  }
   return errors
 }
 
@@ -77,6 +105,9 @@ type CitizenIncidentFormProps = {
   initialValues?: Partial<CitizenIncidentFormValues>
   onSubmit: (values: CitizenIncidentFormValues) => Promise<void>
   submitLabel?: string
+  /** When editing an existing report, media uploads attach immediately. */
+  incidentId?: string
+  actor?: { id: string; name: string } | null
 }
 
 function CitizenIncidentForm({
@@ -84,6 +115,8 @@ function CitizenIncidentForm({
   initialValues,
   onSubmit,
   submitLabel,
+  incidentId,
+  actor = null,
 }: CitizenIncidentFormProps) {
   const [values, setValues] = useState<CitizenIncidentFormValues>({
     ...EMPTY_VALUES,
@@ -92,12 +125,109 @@ function CitizenIncidentForm({
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [locationQuery, setLocationQuery] = useState("")
+  const [showMap, setShowMap] = useState(
+    () => mode === "create" || initialValues?.lat != null
+  )
+  const [geoBusy, setGeoBusy] = useState(false)
+  const [geoError, setGeoError] = useState<string | null>(null)
+  const [draftMedia, setDraftMedia] = useState<PendingMedia[]>([])
+  const [savedMedia, setSavedMedia] = useState<IncidentMedia[]>([])
+  const [mediaLoading, setMediaLoading] = useState(Boolean(incidentId))
+
+  useEffect(() => {
+    if (!incidentId) {
+      setSavedMedia([])
+      setMediaLoading(false)
+      return
+    }
+    let active = true
+    setMediaLoading(true)
+    mediaApi
+      .list(incidentId)
+      .then((items) => {
+        if (active) setSavedMedia(items)
+      })
+      .catch(() => {
+        if (active) setSavedMedia([])
+      })
+      .finally(() => {
+        if (active) setMediaLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [incidentId])
+
+  const suggestions = useMemo(
+    () => filterLocationSuggestions(locationQuery),
+    [locationQuery]
+  )
+
+  const mapCenter: [number, number] = [
+    values.lng ?? DEFAULT_MAP_CENTER[0],
+    values.lat ?? DEFAULT_MAP_CENTER[1],
+  ]
+
+  function clearFieldError(key: keyof CitizenIncidentFormValues) {
+    setErrors((prev) => {
+      if (!prev[key] && key !== "lat" && key !== "lng") return prev
+      const next = { ...prev }
+      delete next[key]
+      if (key === "lat" || key === "lng") delete next.lat
+      return next
+    })
+  }
 
   function updateField<K extends keyof CitizenIncidentFormValues>(
     key: K,
     value: CitizenIncidentFormValues[K]
   ) {
     setValues((prev) => ({ ...prev, [key]: value }))
+    clearFieldError(key)
+  }
+
+  function applyCoordinates(lat: number, lng: number, locationLabel?: string) {
+    setValues((prev) => ({
+      ...prev,
+      lat,
+      lng,
+      location: locationLabel?.trim() || prev.location || "Pinned location",
+    }))
+    setErrors((prev) => {
+      const next = { ...prev }
+      delete next.lat
+      delete next.location
+      return next
+    })
+    setGeoError(null)
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setGeoError("Location is not available in this browser.")
+      return
+    }
+    setGeoBusy(true)
+    setGeoError(null)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        applyCoordinates(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          values.location || "Current location"
+        )
+        setShowMap(true)
+        setGeoBusy(false)
+      },
+      () => {
+        setGeoError(
+          "Could not get your location. Allow location access or pick on the map."
+        )
+        setGeoBusy(false)
+      },
+      { enableHighAccuracy: true, timeout: 12_000 }
+    )
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -105,11 +235,24 @@ function CitizenIncidentForm({
     setSubmitError(null)
     const validationErrors = validate(values)
     setErrors(validationErrors)
-    if (Object.keys(validationErrors).length > 0) return
+    if (Object.keys(validationErrors).length > 0) {
+      if (validationErrors.lat) setShowMap(true)
+      return
+    }
 
     setSubmitting(true)
     try {
-      await onSubmit(values)
+      const media =
+        mode === "create" ? await toDurableMediaItems(draftMedia) : values.media
+      await onSubmit({
+        ...values,
+        title: values.title.trim(),
+        description: values.description.trim(),
+        location: values.location.trim(),
+        reporterPhone: values.reporterPhone.trim(),
+        reporterEmail: values.reporterEmail.trim(),
+        media,
+      })
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Something went wrong."
@@ -128,9 +271,14 @@ function CitizenIncidentForm({
             <FieldContent>
               <Select
                 value={values.type}
-                onValueChange={(value) => updateField("type", value as IncidentType)}
+                onValueChange={(value) =>
+                  updateField("type", value as IncidentType)
+                }
               >
-                <SelectTrigger id="type" className="h-11 w-full bg-[var(--ajali-surface)]">
+                <SelectTrigger
+                  id="type"
+                  className="h-11 w-full bg-[var(--ajali-surface)]"
+                >
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -141,7 +289,9 @@ function CitizenIncidentForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={errors.type ? [{ message: errors.type }] : []} />
+              <FieldError
+                errors={errors.type ? [{ message: errors.type }] : []}
+              />
             </FieldContent>
           </Field>
 
@@ -154,7 +304,10 @@ function CitizenIncidentForm({
                   updateField("urgency", value as IncidentUrgency)
                 }
               >
-                <SelectTrigger id="urgency" className="h-11 w-full bg-[var(--ajali-surface)]">
+                <SelectTrigger
+                  id="urgency"
+                  className="h-11 w-full bg-[var(--ajali-surface)]"
+                >
                   <SelectValue placeholder="Select urgency" />
                 </SelectTrigger>
                 <SelectContent>
@@ -180,7 +333,10 @@ function CitizenIncidentForm({
                   updateField("severity", value as IncidentSeverity)
                 }
               >
-                <SelectTrigger id="severity" className="h-11 w-full bg-[var(--ajali-surface)]">
+                <SelectTrigger
+                  id="severity"
+                  className="h-11 w-full bg-[var(--ajali-surface)]"
+                >
                   <SelectValue placeholder="Select severity" />
                 </SelectTrigger>
                 <SelectContent>
@@ -192,7 +348,9 @@ function CitizenIncidentForm({
                 </SelectContent>
               </Select>
               <FieldError
-                errors={errors.severity ? [{ message: errors.severity }] : []}
+                errors={
+                  errors.severity ? [{ message: errors.severity }] : []
+                }
               />
             </FieldContent>
           </Field>
@@ -209,13 +367,15 @@ function CitizenIncidentForm({
               placeholder="Brief summary of what happened"
               aria-invalid={!!errors.title}
             />
-            <FieldError errors={errors.title ? [{ message: errors.title }] : []} />
+            <FieldError
+              errors={errors.title ? [{ message: errors.title }] : []}
+            />
           </FieldContent>
         </Field>
 
-        <Field data-invalid={!!errors.location}>
+        <Field data-invalid={!!errors.location || !!errors.lat}>
           <FieldLabel htmlFor="location">Location</FieldLabel>
-          <FieldContent>
+          <FieldContent className="gap-3">
             <Input
               id="location"
               className="h-11 bg-[var(--ajali-surface)]"
@@ -227,6 +387,108 @@ function CitizenIncidentForm({
             <FieldError
               errors={errors.location ? [{ message: errors.location }] : []}
             />
+
+            <div className="space-y-2">
+              <FieldLabel
+                htmlFor="locationSearch"
+                className="text-muted-foreground"
+              >
+                Search place
+              </FieldLabel>
+              <Input
+                id="locationSearch"
+                className="h-11 bg-[var(--ajali-surface)]"
+                placeholder="Search Nairobi, Nakuru, Mombasa…"
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+              />
+              <ul className="max-h-36 overflow-y-auto rounded-lg border bg-background">
+                {suggestions.map((item) => (
+                  <li key={item.label}>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                      onClick={() => {
+                        applyCoordinates(item.lat, item.lng, item.label)
+                        setLocationQuery(item.label)
+                        setShowMap(true)
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={geoBusy}
+                onClick={useCurrentLocation}
+              >
+                <LocateFixed className="size-4" />
+                {geoBusy ? "Locating…" : "Use my location"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMap((open) => !open)}
+              >
+                <MapPinned className="size-4" />
+                {showMap ? "Hide map" : "Pick on map"}
+              </Button>
+            </div>
+
+            {geoError ? (
+              <p className="text-xs text-destructive">{geoError}</p>
+            ) : null}
+
+            {values.lat !== null && values.lng !== null ? (
+              <p className="text-xs text-muted-foreground">
+                Pin: {values.lat.toFixed(5)}, {values.lng.toFixed(5)}
+              </p>
+            ) : null}
+
+            <FieldError errors={errors.lat ? [{ message: errors.lat }] : []} />
+
+            {showMap ? (
+              <div className="overflow-hidden rounded-lg border">
+                <div className="h-56">
+                  <Map
+                    center={mapCenter}
+                    zoom={values.lat !== null ? 14 : 11}
+                    theme="light"
+                    className="size-full"
+                  >
+                    <MapMarker
+                      longitude={mapCenter[0]}
+                      latitude={mapCenter[1]}
+                      draggable
+                      onDragEnd={(lngLat) => {
+                        applyCoordinates(
+                          lngLat.lat,
+                          lngLat.lng,
+                          values.location ||
+                            `Pinned ${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`
+                        )
+                      }}
+                    >
+                      <MarkerContent>
+                        <span className="block size-4 rounded-full border-2 border-white bg-[var(--ajali-primary)] shadow" />
+                      </MarkerContent>
+                    </MapMarker>
+                  </Map>
+                </div>
+                <p className="border-t px-3 py-2 text-[11px] text-muted-foreground">
+                  Drag the pin to the exact spot. You can also search or use your
+                  current location.
+                </p>
+              </div>
+            ) : null}
           </FieldContent>
         </Field>
 
@@ -247,8 +509,42 @@ function CitizenIncidentForm({
               what responders see first.
             </FieldDescription>
             <FieldError
-              errors={errors.description ? [{ message: errors.description }] : []}
+              errors={
+                errors.description ? [{ message: errors.description }] : []
+              }
             />
+          </FieldContent>
+        </Field>
+
+        <Field>
+          <FieldLabel>Evidence photos</FieldLabel>
+          <FieldContent className="gap-2">
+            <FieldDescription>
+              Add clear photos of the scene. These help responders verify the
+              report.
+            </FieldDescription>
+            {mediaLoading ? (
+              <p className="text-sm text-muted-foreground">Loading evidence…</p>
+            ) : incidentId ? (
+              <IncidentMediaPanel
+                incidentId={incidentId}
+                media={savedMedia}
+                actor={actor}
+                accept="image/*"
+                addLabel="Add evidence photos"
+                onChanged={() => {
+                  void mediaApi.list(incidentId).then(setSavedMedia)
+                }}
+              />
+            ) : (
+              <IncidentMediaPanel
+                media={[]}
+                draft={draftMedia}
+                onDraftChange={setDraftMedia}
+                accept="image/*"
+                addLabel="Add evidence photos"
+              />
+            )}
           </FieldContent>
         </Field>
 
@@ -292,7 +588,10 @@ function CitizenIncidentForm({
                 )
               }
             >
-              <SelectTrigger id="preferredContact" className="h-11 w-full bg-[var(--ajali-surface)]">
+              <SelectTrigger
+                id="preferredContact"
+                className="h-11 w-full bg-[var(--ajali-surface)]"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -305,7 +604,10 @@ function CitizenIncidentForm({
         </Field>
 
         {submitError ? (
-          <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p
+            role="alert"
+            className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
             {submitError}
           </p>
         ) : null}
@@ -313,8 +615,8 @@ function CitizenIncidentForm({
         <Button type="submit" className="h-11 font-bold" disabled={submitting}>
           {submitting
             ? "Saving…"
-            : submitLabel ??
-              (mode === "create" ? "Submit report" : "Save changes")}
+            : (submitLabel ??
+              (mode === "create" ? "Submit report" : "Save changes"))}
         </Button>
       </FieldGroup>
     </form>

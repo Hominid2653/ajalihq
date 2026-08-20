@@ -26,12 +26,18 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { statusLabel, typeLabel, urgencyLabel, type Incident } from "@/lib/incidents"
+import {
+  isResolvedStatus,
+  statusLabel,
+  typeLabel,
+  urgencyLabel,
+  type Incident,
+} from "@/lib/incidents"
 import { useAuth } from "@/store/hooks"
 
 function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { isAdmin } = useAuth()
+  const { user, isAdmin } = useAuth()
   const navigate = useNavigate()
   const [incident, setIncident] = useState<Incident | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,7 +59,9 @@ function IncidentDetailPage() {
       .finally(() => setLoading(false))
   }, [id])
 
-  const eligible = incident ? isCitizenEditable(incident) : false
+  const isOwner = Boolean(incident && user && incident.userId === user.id)
+  const eligible = incident && isOwner ? isCitizenEditable(incident) : false
+  const resolved = incident ? isResolvedStatus(incident.status) : false
   const when = incident?.createdAt
     ? format(new Date(incident.createdAt), "d MMMM yyyy, h:mm a")
     : "-"
@@ -75,11 +83,11 @@ function IncidentDetailPage() {
 
   return (
     <UserShell
-      title="Incident details"
+      title={isOwner ? "Incident details" : "Community report"}
       end={
         <Link
-          to="/incidents"
-          aria-label="Back to incidents"
+          to={isOwner ? "/incidents" : "/map"}
+          aria-label={isOwner ? "Back to incidents" : "Back to map"}
           className="inline-flex items-center gap-1 text-primary"
         >
           <ArrowLeft className="size-4" />
@@ -92,8 +100,8 @@ function IncidentDetailPage() {
         ) : error && !incident ? (
           <div className="space-y-3">
             <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" onClick={() => navigate("/incidents")}>
-              Back to incidents
+            <Button variant="outline" onClick={() => navigate("/map")}>
+              Back to map
             </Button>
           </div>
         ) : incident ? (
@@ -117,6 +125,16 @@ function IncidentDetailPage() {
                   Urgency: {urgencyLabel(incident.urgency)}
                 </span>
               </div>
+              {resolved ? (
+                <p className="rounded-md bg-[var(--status-resolved)]/15 px-3 py-2 text-sm font-medium text-[var(--status-resolved)]">
+                  This report has been resolved.
+                </p>
+              ) : null}
+              {!isOwner ? (
+                <p className="text-xs text-muted-foreground">
+                  Community report from another user. Contact details are private.
+                </p>
+              ) : null}
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               {error ? (
@@ -141,29 +159,33 @@ function IncidentDetailPage() {
                     {incident.reporterName || "-"}
                   </dd>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Phone</dt>
-                  <dd className="text-right font-medium">
-                    {incident.reporterPhone || "-"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Email</dt>
-                  <dd className="text-right font-medium">
-                    {incident.reporterEmail || "-"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Preferred contact</dt>
-                  <dd className="text-right font-medium">
-                    {incident.preferredContactMethod || "-"}
-                  </dd>
-                </div>
+                {isOwner ? (
+                  <>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Phone</dt>
+                      <dd className="text-right font-medium">
+                        {incident.reporterPhone || "-"}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Email</dt>
+                      <dd className="text-right font-medium">
+                        {incident.reporterEmail || "-"}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Preferred contact</dt>
+                      <dd className="text-right font-medium">
+                        {incident.preferredContactMethod || "-"}
+                      </dd>
+                    </div>
+                  </>
+                ) : null}
               </dl>
               <p className="text-xs text-muted-foreground">Reported {when}</p>
 
               <div className="flex flex-wrap gap-2 pt-1">
-                {eligible ? (
+                {isOwner && eligible ? (
                   <>
                     <Button asChild variant="outline">
                       <Link to={`/incidents/${incident.id}/edit`}>Edit</Link>
@@ -191,11 +213,15 @@ function IncidentDetailPage() {
                       </AlertDialogContent>
                     </AlertDialog>
                   </>
-                ) : (
+                ) : isOwner ? (
                   <p className="text-xs text-muted-foreground">
                     This incident is {statusLabel(incident.status).toLowerCase()} and
                     can no longer be edited or withdrawn.
                   </p>
+                ) : (
+                  <Button asChild variant="outline">
+                    <Link to="/map">Back to map</Link>
+                  </Button>
                 )}
 
                 {isAdmin ? (

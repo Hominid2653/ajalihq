@@ -43,6 +43,32 @@ export type UserRecord = {
   bio?: string
   preferredContactMethod?: "PHONE" | "EMAIL" | "OTHER"
   profileComplete?: boolean
+  /** National ID used to verify the account. */
+  idNumber?: string
+  /** Derived: true when a valid idNumber is on file. */
+  verified?: boolean
+}
+
+function normalizeUserIdNumber(raw: string | undefined | null): string | undefined {
+  if (!raw) return undefined
+  const digits = raw.replace(/\D/g, "")
+  return digits || undefined
+}
+
+function isValidUserIdNumber(raw: string | undefined | null): boolean {
+  const digits = normalizeUserIdNumber(raw)
+  return Boolean(digits && digits.length >= 7 && digits.length <= 8)
+}
+
+function applyIdVerification(
+  idNumberRaw: string | undefined
+): Pick<UserRecord, "idNumber" | "verified"> {
+  const idNumber = normalizeUserIdNumber(idNumberRaw)
+  if (!idNumber) return { idNumber: undefined, verified: false }
+  if (!isValidUserIdNumber(idNumber)) {
+    throw new Error("ID number must be 7 or 8 digits.")
+  }
+  return { idNumber, verified: true }
 }
 
 export type Actor = { id: string; name: string }
@@ -145,12 +171,12 @@ const STORAGE_KEY = "ajali-data"
 const STORAGE_VERSION = 7
 
 const users: UserRecord[] = [
-  { id: "1", name: "Amina Otieno", email: "amina@ajalihq.test", role: "USER", phone: "+254700111222", location: "Nairobi", preferredContactMethod: "PHONE", profileComplete: true },
-  { id: "2", name: "Brian Mwangi", email: "brian@ajalihq.test", role: "ADMIN", phone: "+254711222333", location: "Nairobi", preferredContactMethod: "PHONE", profileComplete: true },
-  { id: "3", name: "Grace Wanjiku", email: "grace@ajalihq.test", role: "USER", phone: "+254722333444", location: "Nakuru", preferredContactMethod: "PHONE", profileComplete: true },
-  { id: "4", name: "Daniel Kipchoge", email: "daniel@ajalihq.test", role: "USER", phone: "+254733444555", location: "Eldoret", preferredContactMethod: "PHONE", profileComplete: true },
-  { id: "5", name: "Faith Njeri", email: "faith@ajalihq.test", role: "ADMIN", phone: "+254744555666", location: "Nairobi", preferredContactMethod: "EMAIL", profileComplete: true },
-  { id: "6", name: "Hassan Ali", email: "hassan@ajalihq.test", role: "USER", phone: "+254755666777", location: "Mombasa", preferredContactMethod: "PHONE", profileComplete: true },
+  { id: "1", name: "Amina Otieno", email: "amina@ajalihq.test", role: "USER", phone: "+254700111222", location: "Nairobi", preferredContactMethod: "PHONE", profileComplete: true, idNumber: "28473615", verified: true },
+  { id: "2", name: "Brian Mwangi", email: "brian@ajalihq.test", role: "ADMIN", phone: "+254711222333", location: "Nairobi", preferredContactMethod: "PHONE", profileComplete: true, idNumber: "29104582", verified: true },
+  { id: "3", name: "Grace Wanjiku", email: "grace@ajalihq.test", role: "USER", phone: "+254722333444", location: "Nakuru", preferredContactMethod: "PHONE", profileComplete: true, idNumber: "30681917", verified: true },
+  { id: "4", name: "Daniel Kipchoge", email: "daniel@ajalihq.test", role: "USER", phone: "+254733444555", location: "Eldoret", preferredContactMethod: "PHONE", profileComplete: true, idNumber: "27581934", verified: true },
+  { id: "5", name: "Faith Njeri", email: "faith@ajalihq.test", role: "ADMIN", phone: "+254744555666", location: "Nairobi", preferredContactMethod: "EMAIL", profileComplete: true, idNumber: "31266740", verified: true },
+  { id: "6", name: "Hassan Ali", email: "hassan@ajalihq.test", role: "USER", phone: "+254755666777", location: "Mombasa", preferredContactMethod: "PHONE", profileComplete: true, verified: false },
 ]
 
 const departments: Department[] = [
@@ -670,12 +696,18 @@ export async function apiCreateUser(input: {
   location?: string
   bio?: string
   preferredContactMethod?: UserRecord["preferredContactMethod"]
+  idNumber?: string
 }): Promise<UserRecord> {
   await wait()
   const normalizedEmail = input.email.trim().toLowerCase()
   const existing = db.users.find((user) => user.email.toLowerCase() === normalizedEmail)
   if (existing) return clone({ ...existing, role: normalizeRole(existing.role) })
   const phone = input.phone?.trim() || undefined
+  const idFields = applyIdVerification(input.idNumber)
+  if (idFields.idNumber) {
+    const taken = db.users.some((user) => user.idNumber === idFields.idNumber)
+    if (taken) throw new Error("That ID number is already linked to another account.")
+  }
   const user: UserRecord = {
     id: nextId("user"),
     name: input.name.trim(),
@@ -687,6 +719,7 @@ export async function apiCreateUser(input: {
     bio: input.bio?.trim() || undefined,
     preferredContactMethod: input.preferredContactMethod ?? "PHONE",
     profileComplete: Boolean(input.name.trim() && phone),
+    ...idFields,
   }
   db.users.push(user)
   persist()
@@ -708,6 +741,7 @@ export type UpdateUserPatch = Partial<
     | "location"
     | "bio"
     | "preferredContactMethod"
+    | "idNumber"
   >
 >
 
@@ -735,6 +769,22 @@ export async function apiUpdateUser(
     bio: patch.bio !== undefined ? patch.bio.trim() || undefined : current.bio,
     preferredContactMethod:
       patch.preferredContactMethod ?? current.preferredContactMethod ?? "PHONE",
+  }
+  if (patch.idNumber !== undefined) {
+    const idFields = applyIdVerification(patch.idNumber)
+    if (
+      idFields.idNumber &&
+      db.users.some(
+        (user) => user.id !== id && user.idNumber === idFields.idNumber
+      )
+    ) {
+      throw new Error("That ID number is already linked to another account.")
+    }
+    next.idNumber = idFields.idNumber
+    next.verified = idFields.verified
+  } else {
+    // Keep verification in sync if seed/legacy records drift
+    next.verified = Boolean(next.idNumber && isValidUserIdNumber(next.idNumber))
   }
   next.profileComplete = Boolean(next.name.trim() && next.phone)
   next.role = normalizeRole(next.role)
@@ -812,6 +862,20 @@ export async function apiGetActiveIncidents(): Promise<Incident[]> {
   return clone(
     db.incidents
       .filter((item) => item.status === "IN_PROGRESS" && !item.archived)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  )
+}
+
+/**
+ * Citizen map / community feed: other residents' reports that ops has opened
+ * to the public (verified, in progress, or resolved). Pending/closed stay private.
+ */
+export async function apiGetCommunityIncidents(): Promise<Incident[]> {
+  await wait()
+  const visible = new Set(["VERIFIED", "IN_PROGRESS", "RESOLVED"])
+  return clone(
+    db.incidents
+      .filter((item) => !item.archived && visible.has(item.status))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   )
 }

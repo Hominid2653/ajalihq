@@ -11,7 +11,7 @@ import { registerUser, signIn } from "@/lib/auth"
 import { defaultHomeForRole } from "@/lib/rbac"
 import { toDurableMediaUrl } from "@/services/media-api"
 import { useAppDispatch } from "@/store/hooks"
-import { isProfileComplete } from "@/types/auth"
+import { isProfileComplete, isValidIdNumber } from "@/types/auth"
 
 function SignUpPage() {
   const dispatch = useAppDispatch()
@@ -23,6 +23,7 @@ function SignUpPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [avatarUrl, setAvatarUrl] = useState("")
+  const [idNumber, setIdNumber] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
@@ -56,6 +57,10 @@ function SignUpPage() {
       setError("Passwords do not match.")
       return
     }
+    if (idNumber.trim() && !isValidIdNumber(idNumber)) {
+      setError("ID number must be 7 or 8 digits.")
+      return
+    }
 
     setPending(true)
     try {
@@ -64,6 +69,7 @@ function SignUpPage() {
         email,
         phone,
         avatarUrl: avatarUrl || undefined,
+        idNumber: idNumber.trim() || undefined,
       })
       signIn(dispatch, user)
       navigate(
@@ -163,6 +169,21 @@ function SignUpPage() {
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
           />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="id-number">National ID number (optional)</Label>
+          <Input
+            id="id-number"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="7 or 8 digit ID"
+            className="h-11 bg-white"
+            value={idNumber}
+            onChange={(event) => setIdNumber(event.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Adding a valid ID number verifies your account.
+          </p>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="signup-password">Password</Label>

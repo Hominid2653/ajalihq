@@ -70,6 +70,24 @@ export function isActiveStatus(status: string) {
   return status === "IN_PROGRESS"
 }
 
+export function isResolvedStatus(status: string) {
+  return status === "RESOLVED"
+}
+
+/** Statuses other citizens may see on the map and in community detail. */
+export const COMMUNITY_STATUSES = [
+  "VERIFIED",
+  "IN_PROGRESS",
+  "RESOLVED",
+] as const
+
+export function isCommunityVisible(incident: Incident): boolean {
+  return (
+    !incident.archived &&
+    (COMMUNITY_STATUSES as readonly string[]).includes(incident.status)
+  )
+}
+
 /** Citizen may edit / withdraw only while the report is still pending review. */
 export function isCitizenEditable(incident: Incident): boolean {
   return !incident.archived && incident.status === "PENDING"
@@ -80,9 +98,28 @@ export async function fetchAllIncidents(): Promise<Incident[]> {
   return incidentApi.getAll()
 }
 
-/** Current user's incidents only (citizen). */
+/** Current user's incidents only (citizen "My incidents"). */
 export async function fetchMyIncidents(userId: string): Promise<Incident[]> {
   return incidentApi.getAll({ userId })
+}
+
+/**
+ * Shared citizen map/community feed - verified, in-progress, and resolved
+ * reports from all users (same source for dashboard map + map page).
+ */
+export async function fetchCommunityIncidents(): Promise<Incident[]> {
+  return incidentApi.getCommunity()
+}
+
+/** Community reports that have map coordinates. */
+export async function fetchCommunityMapIncidents(): Promise<
+  (Incident & { lat: number; lng: number })[]
+> {
+  const list = await fetchCommunityIncidents()
+  return list.filter(
+    (item): item is Incident & { lat: number; lng: number } =>
+      item.lat !== null && item.lng !== null
+  )
 }
 
 /** @deprecated Use fetchAllIncidents or fetchMyIncidents */

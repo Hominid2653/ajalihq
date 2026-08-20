@@ -4,14 +4,15 @@ import { ArrowRight } from "lucide-react"
 
 import { RoleGuard } from "@/components/auth/role-guard"
 import { ActiveReportStatus } from "@/components/user/active-report-status"
+import { CitizenMapMarker } from "@/components/user/citizen-map-marker"
 import { EmergencyReportButton } from "@/components/user/emergency-report-button"
 import { UserShell } from "@/components/user/user-shell"
-import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
+import { Map, MapControls } from "@/components/ui/map"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ROLES } from "@/lib/rbac"
 import {
+  fetchCommunityMapIncidents,
   fetchMyIncidents,
-  isActiveStatus,
   type Incident,
 } from "@/lib/incidents"
 import { useAuth } from "@/store/hooks"
@@ -20,24 +21,31 @@ const NAIROBI: [number, number] = [36.8172, -1.2864]
 
 function DashboardPage() {
   const { user } = useAuth()
-  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [myIncidents, setMyIncidents] = useState<Incident[]>([])
+  const [mapPins, setMapPins] = useState<
+    (Incident & { lat: number; lng: number })[]
+  >([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
     setLoading(true)
-    fetchMyIncidents(user.id)
-      .then(setIncidents)
-      .catch(() => setIncidents([]))
+    Promise.all([
+      fetchMyIncidents(user.id),
+      fetchCommunityMapIncidents(),
+    ])
+      .then(([mine, community]) => {
+        setMyIncidents(mine)
+        setMapPins(community)
+      })
+      .catch(() => {
+        setMyIncidents([])
+        setMapPins([])
+      })
       .finally(() => setLoading(false))
   }, [user])
 
   if (!user) return null
-
-  const mapPins = incidents.filter(
-    (i): i is Incident & { lat: number; lng: number } =>
-      isActiveStatus(i.status) && i.lat !== null && i.lng !== null
-  )
 
   return (
     <UserShell
@@ -61,48 +69,46 @@ function DashboardPage() {
         </div>
       }
     >
-      {/* Map hero */}
+      {/* Map hero - community reports (same API as Map page) */}
       <section className="relative h-[min(38vh,280px)] overflow-hidden bg-muted sm:h-[min(42vh,340px)] md:h-[min(48vh,420px)]">
         <Map
           center={NAIROBI}
           zoom={11.5}
           theme="light"
-          interactive={false}
-          attributionControl={false}
-          className="pointer-events-none absolute inset-0 size-full rounded-none"
+          className="absolute inset-0 size-full rounded-none"
         >
+          <MapControls
+            position="bottom-left"
+            showZoom
+            showLocate={false}
+            showFullscreen={false}
+          />
           {mapPins.map((incident) => (
-            <MapMarker
+            <CitizenMapMarker
               key={incident.id}
-              longitude={incident.lng}
-              latitude={incident.lat}
-            >
-              <MarkerContent>
-                <span
-                  className="block size-2.5 rounded-full border-2 border-white bg-[var(--ajali-primary)] shadow-sm"
-                  aria-hidden
-                />
-              </MarkerContent>
-            </MapMarker>
+              incident={incident}
+              showLabel={false}
+              compact
+            />
           ))}
         </Map>
         <Link
           to="/map"
           className="absolute right-4 bottom-4 z-10 flex size-11 items-center justify-center rounded-full bg-[var(--ajali-primary)] text-white shadow-elevated transition-colors hover:bg-[var(--ajali-primary-hover)]"
-          aria-label="Open map"
+          aria-label="Open community map"
         >
           <ArrowRight className="size-5" />
         </Link>
       </section>
 
-      {/* Emergency CTA + active report status */}
+      {/* Emergency CTA + your active report status */}
       <section className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-8 px-4 py-8 md:py-12">
         <EmergencyReportButton />
 
         {loading ? (
           <Skeleton className="h-36 w-full max-w-md rounded-2xl" />
         ) : (
-          <ActiveReportStatus incidents={incidents} />
+          <ActiveReportStatus incidents={myIncidents} />
         )}
 
         <Link

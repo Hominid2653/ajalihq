@@ -18,6 +18,10 @@ export type IncidentRecord = {
   description: string
   status: string
   location: string
+  /** WGS84 latitude — used by mapcn / MapLibre */
+  lat: number
+  /** WGS84 longitude — used by mapcn / MapLibre */
+  lng: number
   userId: string
   createdAt: string
 }
@@ -37,7 +41,8 @@ type Database = {
 }
 
 const STORAGE_KEY = "ajali-data"
-const STORAGE_VERSION = 1
+/** Bump when seed shape changes so browsers refresh lat/lng coords. */
+const STORAGE_VERSION = 2
 
 const seed: Database = {
   users: [
@@ -61,7 +66,9 @@ const seed: Database = {
       description:
         "Two vehicles collided near the Nyayo Stadium exit. Traffic is delayed in both directions.",
       status: "reported",
-      location: "Nairobi",
+      location: "Mombasa Road, Nairobi",
+      lat: -1.3102,
+      lng: 36.8348,
       userId: "1",
       createdAt: "2026-08-18T09:15:00.000Z",
     },
@@ -71,9 +78,47 @@ const seed: Database = {
       description:
         "Heavy rain left several streets impassable. Residents are requesting assistance.",
       status: "investigating",
-      location: "Nairobi",
+      location: "South B, Nairobi",
+      lat: -1.3165,
+      lng: 36.8412,
       userId: "1",
       createdAt: "2026-08-18T11:42:00.000Z",
+    },
+    {
+      id: "3",
+      title: "Fire outbreak near Gikomba",
+      description:
+        "Smoke reported from a market stall cluster. Fire brigade en route.",
+      status: "verified",
+      location: "Gikomba, Nairobi",
+      lat: -1.2839,
+      lng: 36.8405,
+      userId: "1",
+      createdAt: "2026-08-19T07:05:00.000Z",
+    },
+    {
+      id: "4",
+      title: "Road blockage on Waiyaki Way",
+      description:
+        "Overturned lorry blocking outbound lanes near Westlands.",
+      status: "investigating",
+      location: "Westlands, Nairobi",
+      lat: -1.2674,
+      lng: 36.8108,
+      userId: "1",
+      createdAt: "2026-08-19T14:20:00.000Z",
+    },
+    {
+      id: "5",
+      title: "Medical emergency at Uhuru Park",
+      description:
+        "Bystanders report a person collapsed near the main gate.",
+      status: "reported",
+      location: "Uhuru Park, Nairobi",
+      lat: -1.2893,
+      lng: 36.8172,
+      userId: "1",
+      createdAt: "2026-08-20T06:40:00.000Z",
     },
   ],
   comments: [
@@ -191,6 +236,8 @@ export async function apiCreateIncident(input: {
   location: string
   userId: string
   status?: string
+  lat?: number
+  lng?: number
 }): Promise<IncidentRecord> {
   await wait()
   const incident: IncidentRecord = {
@@ -198,6 +245,8 @@ export async function apiCreateIncident(input: {
     title: input.title.trim(),
     description: input.description.trim(),
     location: input.location.trim(),
+    lat: input.lat ?? -1.2864,
+    lng: input.lng ?? 36.8172,
     userId: input.userId,
     status: input.status ?? "reported",
     createdAt: new Date().toISOString(),

@@ -38,22 +38,30 @@ function SearchPage() {
       title="Search reports"
       end={
         <Link to="/reports" aria-label="Close search">
-          <X className="size-5 text-neutral-800" />
+          <X className="size-5 text-foreground" />
         </Link>
       }
     >
-      <form className="mx-auto flex w-full max-w-3xl gap-2 px-4 py-4 md:px-6" onSubmit={onSubmit}>
+      <form
+        className="mx-auto flex w-full max-w-4xl gap-2 px-4 py-4 md:px-8 lg:px-10"
+        onSubmit={onSubmit}
+      >
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Enter a search term"
           className="h-11 bg-white"
         />
-        <Button className="size-11 shrink-0" size="icon" type="submit" aria-label="Search">
+        <Button
+          className="size-11 shrink-0"
+          size="icon"
+          type="submit"
+          aria-label="Search"
+        >
           <Search className="size-5" />
         </Button>
       </form>
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 pb-6 md:px-6">
+      <div className="mx-auto grid w-full max-w-4xl gap-2 px-4 pb-6 md:px-8 lg:grid-cols-2 lg:px-10">
         {results.map((incident) => (
           <ReportRow key={incident.id} incident={incident} />
         ))}

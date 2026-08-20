@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   LogOut,
   Map,
-  PlusCircle,
   ScrollText,
   Shield,
 } from "lucide-react"
@@ -47,18 +46,16 @@ const tabs = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/analytics", label: "Analytics", icon: ChartNoAxesCombined },
   { to: "/admin/incidents", label: "Incidents", icon: ClipboardList },
-  { to: "/admin/incidents/new", label: "Create", icon: PlusCircle },
   { to: "/admin/map", label: "Map", icon: Map },
   { to: "/admin/departments", label: "Departments", icon: Building2 },
   { to: "/admin/notifications", label: "Alerts", icon: Bell },
   { to: "/admin/audit-log", label: "Audit", icon: ScrollText },
 ]
 
-/** Primary tabs shown in the mobile bottom bar */
+/** Primary tabs shown in the mobile bottom bar (create via Add report modal) */
 const mobilePrimary = [
   { to: "/admin", label: "Home", icon: LayoutDashboard, end: true },
   { to: "/admin/incidents", label: "Inbox", icon: ClipboardList },
-  { to: "/admin/incidents/new", label: "Create", icon: PlusCircle },
   { to: "/admin/map", label: "Map", icon: Map },
 ]
 
@@ -395,7 +392,7 @@ function AdminShell({
         }}
         aria-label="Admin"
       >
-        <ul className="grid h-full grid-cols-5">
+        <ul className="grid h-full grid-cols-4">
           {mobilePrimary.map((tab) => (
             <li key={tab.to} className="flex">
               <NavLink

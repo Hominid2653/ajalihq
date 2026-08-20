@@ -192,6 +192,8 @@ export type IncidentListItem = Incident & {
 export type IncidentListQuery = {
   userId?: string
   status?: IncidentStatus
+  /** When set, matches any of these statuses (ignored if `status` is set). */
+  statusIn?: IncidentStatus[]
   urgency?: IncidentUrgency
   severity?: IncidentSeverity
   type?: IncidentType

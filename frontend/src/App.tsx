@@ -1,5 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
+import { IncidentsListPage } from "@/pages/incidents/incident-list"
+import { NewIncidentPage } from "@/pages/incidents/new-incident"
+import { IncidentDetailPage } from "@/pages/incidents/incident-detail"
+import { EditIncidentPage } from "@/pages/incidents/edit-incident"
 import { RequireSession } from "@/components/auth/require-session"
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage"
 import { LogoutConfirmPage } from "@/pages/auth/LogoutConfirmPage"
@@ -14,6 +18,7 @@ import { DashboardPage } from "@/pages/user/DashboardPage"
 import { MapPage } from "@/pages/user/MapPage"
 import { ReportsPage } from "@/pages/user/ReportsPage"
 import { SearchPage } from "@/pages/user/SearchPage"
+
 
 function App() {
   return (
@@ -69,6 +74,10 @@ function App() {
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/incidents" element={<RequireSession><IncidentsListPage /></RequireSession>} />
+        <Route path="/incidents/new" element={<RequireSession><NewIncidentPage /></RequireSession>} />
+        <Route path="/incidents/:id" element={<RequireSession><IncidentDetailPage /></RequireSession>} />
+        <Route path="/incidents/:id/edit" element={<RequireSession><EditIncidentPage /></RequireSession>} />
       </Routes>
     </BrowserRouter>
   )

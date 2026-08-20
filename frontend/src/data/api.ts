@@ -12,14 +12,29 @@ export type UserRecord = {
   phone?: string
 }
 
+export type IncidentType =
+  | "traffic"
+  | "fire"
+  | "flooding"
+  | "medical"
+  | "security"
+  | "infrastructure"
+  | "other"
+
+export type IncidentSeverity = "low" | "medium" | "high" | "critical"
+
 export type IncidentRecord = {
   id: string
+  referenceNumber: string
   title: string
   description: string
+  incidentType: IncidentType
+  severity: IncidentSeverity
   status: string
   location: string
   userId: string
   createdAt: string
+  updatedAt?: string
 }
 
 export type CommentRecord = {
@@ -37,7 +52,13 @@ type Database = {
 }
 
 const STORAGE_KEY = "ajali-data"
-const STORAGE_VERSION = 1
+const STORAGE_VERSION = 2
+
+function generateReferenceNumber(): string {
+  const year = new Date().getFullYear()
+  const random = Math.floor(1000 + Math.random() * 9000)
+  return `AJH-${year}-${random}`
+}
 
 const seed: Database = {
   users: [
@@ -57,9 +78,12 @@ const seed: Database = {
   incidents: [
     {
       id: "1",
+      referenceNumber: "AJH-2026-1001",
       title: "Traffic collision on Mombasa Road",
       description:
         "Two vehicles collided near the Nyayo Stadium exit. Traffic is delayed in both directions.",
+      incidentType: "traffic",
+      severity: "medium",
       status: "reported",
       location: "Nairobi",
       userId: "1",
@@ -67,9 +91,12 @@ const seed: Database = {
     },
     {
       id: "2",
+      referenceNumber: "AJH-2026-1002",
       title: "Flooding in South B",
       description:
         "Heavy rain left several streets impassable. Residents are requesting assistance.",
+      incidentType: "flooding",
+      severity: "high",
       status: "investigating",
       location: "Nairobi",
       userId: "1",
@@ -188,6 +215,8 @@ export async function apiGetIncident(
 export async function apiCreateIncident(input: {
   title: string
   description: string
+  incidentType: IncidentType
+  severity: IncidentSeverity
   location: string
   userId: string
   status?: string
@@ -195,8 +224,11 @@ export async function apiCreateIncident(input: {
   await wait()
   const incident: IncidentRecord = {
     id: nextId(),
+    referenceNumber: generateReferenceNumber(),
     title: input.title.trim(),
     description: input.description.trim(),
+    incidentType: input.incidentType,
+    severity: input.severity,
     location: input.location.trim(),
     userId: input.userId,
     status: input.status ?? "reported",
@@ -205,6 +237,55 @@ export async function apiCreateIncident(input: {
   db = { ...db, incidents: [...db.incidents, incident] }
   persist()
   return incident
+}
+
+export async function apiUpdateIncident(
+  id: string,
+  input: Partial<{
+    title: string
+    description: string
+    incidentType: IncidentType
+    severity: IncidentSeverity
+    location: string
+    status: string
+  }>
+): Promise<IncidentRecord> {
+  await wait()
+  const index = db.incidents.findIndex((incident) => incident.id === id)
+  if (index === -1) {
+    throw new Error(`Incident ${id} not found`)
+  }
+  const updated: IncidentRecord = {
+    ...db.incidents[index],
+    ...input,
+    updatedAt: new Date().toISOString(),
+  }
+  db = {
+    ...db,
+    incidents: [
+      ...db.incidents.slice(0, index),
+      updated,
+      ...db.incidents.slice(index + 1),
+    ],
+  }
+  persist()
+  return updated
+}
+
+// Soft action: flips status to "withdrawn" rather than removing the record.
+export async function apiWithdrawIncident(id: string): Promise<IncidentRecord> {
+  return apiUpdateIncident(id, { status: "withdrawn" })
+}
+
+// Hard action: removes the record entirely.
+export async function apiDeleteIncident(id: string): Promise<void> {
+  await wait()
+  const exists = db.incidents.some((incident) => incident.id === id)
+  if (!exists) {
+    throw new Error(`Incident ${id} not found`)
+  }
+  db = { ...db, incidents: db.incidents.filter((incident) => incident.id !== id) }
+  persist()
 }
 
 export async function apiGetComments(incidentId?: string): Promise<CommentRecord[]> {

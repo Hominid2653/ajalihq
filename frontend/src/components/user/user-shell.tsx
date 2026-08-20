@@ -14,6 +14,7 @@ import { Logomark } from "@/components/brand/logomark"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAuth } from "@/store/hooks"
+import { isAccountVerified } from "@/types/auth"
 import { cn } from "@/lib/utils"
 
 const SIDEBAR_KEY = "ajali-sidebar-expanded"
@@ -191,6 +192,11 @@ function UserShell({ title, end, children, bleed = false }: UserShellProps) {
               <div className="min-w-0">
                 <p className="truncate font-semibold text-sidebar-foreground">
                   {session.name}
+                  {isAccountVerified(session) ? (
+                    <span className="ml-1.5 text-[10px] font-bold text-[var(--status-resolved)]">
+                      Verified
+                    </span>
+                  ) : null}
                 </p>
                 <p className="truncate">{session.email}</p>
               </div>

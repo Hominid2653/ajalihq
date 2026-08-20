@@ -6,28 +6,16 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
-import type {
-  IncidentSeverity,
-  IncidentType,
-  IncidentUrgency,
-  PreferredContactMethod,
+import { LOCATION_SUGGESTIONS } from "@/lib/locations"
+import {
+  type IncidentSeverity,
+  type IncidentType,
+  type IncidentUrgency,
+  type PreferredContactMethod,
+  severityLabel,
+  typeLabel,
+  urgencyLabel,
 } from "@/types/incident"
-import { severityLabel, typeLabel, urgencyLabel } from "@/types/incident"
-
-/** Curated Kenyan places for Sprint 1 search (Flask can swap for geocoder). */
-const LOCATION_SUGGESTIONS: { label: string; lat: number; lng: number }[] = [
-  { label: "Mombasa Road, Nairobi", lat: -1.3102, lng: 36.8348 },
-  { label: "Gikomba Market, Nairobi", lat: -1.2839, lng: 36.8405 },
-  { label: "Westlands, Nairobi", lat: -1.2674, lng: 36.8108 },
-  { label: "Kaptembwo, Nakuru", lat: -0.3031, lng: 36.08 },
-  { label: "Nakuru town", lat: -0.3031, lng: 36.08 },
-  { label: "Likoni Ferry, Mombasa", lat: -4.0838, lng: 39.6612 },
-  { label: "Kisauni, Mombasa", lat: -4.0203, lng: 39.6953 },
-  { label: "Kisumu CBD, Kisumu", lat: -0.1022, lng: 34.7617 },
-  { label: "Milimani, Kisumu", lat: -0.1097, lng: 34.7538 },
-  { label: "Uganda Road, Eldoret", lat: 0.5143, lng: 35.2698 },
-  { label: "Naivasha Road, Nakuru", lat: -0.7172, lng: 36.431 },
-]
 
 export type IncidentFormValues = {
   type: IncidentType

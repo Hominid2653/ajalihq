@@ -59,7 +59,13 @@ function EditReportPage() {
         description: values.description,
         location: values.location,
         type: values.type,
+        urgency: values.urgency,
         severity: values.severity,
+        lat: values.lat,
+        lng: values.lng,
+        reporterPhone: values.reporterPhone,
+        reporterEmail: values.reporterEmail,
+        preferredContactMethod: values.preferredContactMethod,
       },
       { id: user.id, name: user.name }
     )
@@ -97,12 +103,21 @@ function EditReportPage() {
         ) : incident ? (
           <CitizenIncidentForm
             mode="edit"
+            incidentId={incident.id}
+            actor={user ? { id: user.id, name: user.name } : null}
             initialValues={{
               title: incident.title,
               description: incident.description,
               location: incident.location,
               type: incident.type,
+              urgency: incident.urgency,
               severity: incident.severity,
+              reporterPhone: incident.reporterPhone ?? "",
+              reporterEmail: incident.reporterEmail ?? "",
+              preferredContactMethod:
+                incident.preferredContactMethod ?? "PHONE",
+              lat: incident.lat,
+              lng: incident.lng,
             }}
             onSubmit={onSubmit}
             submitLabel="Save changes"

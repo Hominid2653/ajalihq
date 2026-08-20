@@ -11,7 +11,7 @@ export const adminApi = {
   getAuditLogs(options?: { incidentId?: string }) {
     return apiGetAuditLogs(options)
   },
-  /** Reserved for a future Admin Users page — not wired in Sprint 1 UI. */
+  /** Reserved for a future Admin Users page - not wired in Sprint 1 UI. */
   getUsers() {
     return apiGetUsers()
   },

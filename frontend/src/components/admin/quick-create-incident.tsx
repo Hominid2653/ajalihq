@@ -71,7 +71,7 @@ function QuickCreateIncidentButton({
     try {
       const title =
         values.title.trim() ||
-        `${typeLabel(values.type)} — ${values.location.trim() || "Reported incident"}`
+        `${typeLabel(values.type)} - ${values.location.trim() || "Reported incident"}`
       const media = await durableDraftMedia(draftMedia)
       const incident = await incidentApi.create(
         {

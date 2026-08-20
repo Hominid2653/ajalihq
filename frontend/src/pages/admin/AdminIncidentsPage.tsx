@@ -320,7 +320,7 @@ function AdminIncidentsPage() {
                       <VerificationBadge status={incident.verificationStatus} />
                     </TableCell>
                     <TableCell className="max-w-36 truncate text-xs">
-                      {(deptByIncident.get(incident.id) ?? []).join(", ") || "—"}
+                      {(deptByIncident.get(incident.id) ?? []).join(", ") || "-"}
                     </TableCell>
                     <TableCell><SeverityBadge severity={incident.severity} /></TableCell>
                     <TableCell>

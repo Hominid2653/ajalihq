@@ -38,6 +38,11 @@ export type UserRecord = {
   email: string
   role: Role
   phone?: string
+  avatarUrl?: string
+  location?: string
+  bio?: string
+  preferredContactMethod?: "PHONE" | "EMAIL" | "OTHER"
+  profileComplete?: boolean
 }
 
 export type Actor = { id: string; name: string }
@@ -99,7 +104,7 @@ export type ResolveIncidentInput = {
   notes?: string
   outcome: ResolutionOutcome
   completeHandoffs?: boolean
-  /** Prompted at resolution — Sprint 1 mocks SMS/EMAIL delivery. */
+  /** Prompted at resolution - Sprint 1 mocks SMS/EMAIL delivery. */
   notifyCitizen?: {
     sms?: boolean
     email?: boolean
@@ -137,15 +142,15 @@ type Database = {
 }
 
 const STORAGE_KEY = "ajali-data"
-const STORAGE_VERSION = 6
+const STORAGE_VERSION = 7
 
 const users: UserRecord[] = [
-  { id: "1", name: "Amina Otieno", email: "amina@ajalihq.test", role: "USER", phone: "+254700111222" },
-  { id: "2", name: "Brian Mwangi", email: "brian@ajalihq.test", role: "ADMIN", phone: "+254711222333" },
-  { id: "3", name: "Grace Wanjiku", email: "grace@ajalihq.test", role: "USER", phone: "+254722333444" },
-  { id: "4", name: "Daniel Kipchoge", email: "daniel@ajalihq.test", role: "USER", phone: "+254733444555" },
-  { id: "5", name: "Faith Njeri", email: "faith@ajalihq.test", role: "ADMIN", phone: "+254744555666" },
-  { id: "6", name: "Hassan Ali", email: "hassan@ajalihq.test", role: "USER", phone: "+254755666777" },
+  { id: "1", name: "Amina Otieno", email: "amina@ajalihq.test", role: "USER", phone: "+254700111222", location: "Nairobi", preferredContactMethod: "PHONE", profileComplete: true },
+  { id: "2", name: "Brian Mwangi", email: "brian@ajalihq.test", role: "ADMIN", phone: "+254711222333", location: "Nairobi", preferredContactMethod: "PHONE", profileComplete: true },
+  { id: "3", name: "Grace Wanjiku", email: "grace@ajalihq.test", role: "USER", phone: "+254722333444", location: "Nakuru", preferredContactMethod: "PHONE", profileComplete: true },
+  { id: "4", name: "Daniel Kipchoge", email: "daniel@ajalihq.test", role: "USER", phone: "+254733444555", location: "Eldoret", preferredContactMethod: "PHONE", profileComplete: true },
+  { id: "5", name: "Faith Njeri", email: "faith@ajalihq.test", role: "ADMIN", phone: "+254744555666", location: "Nairobi", preferredContactMethod: "EMAIL", profileComplete: true },
+  { id: "6", name: "Hassan Ali", email: "hassan@ajalihq.test", role: "USER", phone: "+254755666777", location: "Mombasa", preferredContactMethod: "PHONE", profileComplete: true },
 ]
 
 const departments: Department[] = [
@@ -661,18 +666,81 @@ export async function apiCreateUser(input: {
   email: string
   phone?: string
   role?: Role
+  avatarUrl?: string
+  location?: string
+  bio?: string
+  preferredContactMethod?: UserRecord["preferredContactMethod"]
 }): Promise<UserRecord> {
   await wait()
   const normalizedEmail = input.email.trim().toLowerCase()
   const existing = db.users.find((user) => user.email.toLowerCase() === normalizedEmail)
   if (existing) return clone({ ...existing, role: normalizeRole(existing.role) })
+  const phone = input.phone?.trim() || undefined
   const user: UserRecord = {
-    id: nextId("user"), name: input.name.trim(), email: normalizedEmail,
-    phone: input.phone?.trim() || undefined, role: normalizeRole(input.role ?? "USER"),
+    id: nextId("user"),
+    name: input.name.trim(),
+    email: normalizedEmail,
+    phone,
+    role: normalizeRole(input.role ?? "USER"),
+    avatarUrl: input.avatarUrl,
+    location: input.location?.trim() || undefined,
+    bio: input.bio?.trim() || undefined,
+    preferredContactMethod: input.preferredContactMethod ?? "PHONE",
+    profileComplete: Boolean(input.name.trim() && phone),
   }
   db.users.push(user)
   persist()
   return clone(user)
+}
+
+export async function apiGetUser(id: string): Promise<UserRecord | null> {
+  await wait()
+  const user = db.users.find((item) => item.id === id)
+  return user ? clone({ ...user, role: normalizeRole(user.role) }) : null
+}
+
+export type UpdateUserPatch = Partial<
+  Pick<
+    UserRecord,
+    | "name"
+    | "phone"
+    | "avatarUrl"
+    | "location"
+    | "bio"
+    | "preferredContactMethod"
+  >
+>
+
+export async function apiUpdateUser(
+  id: string,
+  patch: UpdateUserPatch
+): Promise<UserRecord> {
+  await wait()
+  const index = db.users.findIndex((item) => item.id === id)
+  if (index === -1) throw new Error(`User ${id} was not found.`)
+  const current = db.users[index]
+  const next: UserRecord = {
+    ...current,
+    name: patch.name !== undefined ? patch.name.trim() : current.name,
+    phone:
+      patch.phone !== undefined
+        ? patch.phone.trim() || undefined
+        : current.phone,
+    avatarUrl:
+      patch.avatarUrl !== undefined ? patch.avatarUrl || undefined : current.avatarUrl,
+    location:
+      patch.location !== undefined
+        ? patch.location.trim() || undefined
+        : current.location,
+    bio: patch.bio !== undefined ? patch.bio.trim() || undefined : current.bio,
+    preferredContactMethod:
+      patch.preferredContactMethod ?? current.preferredContactMethod ?? "PHONE",
+  }
+  next.profileComplete = Boolean(next.name.trim() && next.phone)
+  next.role = normalizeRole(next.role)
+  db.users[index] = next
+  persist()
+  return clone(next)
 }
 
 /* ─── Incidents ─── */
@@ -1050,7 +1118,7 @@ export async function apiResolveIncident(
   const citizenBody =
     `Your report ${updated.reference} has been resolved. ` +
     `${input.summary.trim()}` +
-    (updated.reporterName ? ` — Ajali! Operations` : "")
+    (updated.reporterName ? ` - Ajali! Operations` : "")
 
   for (const channel of citizenChannels) {
     const destination =
@@ -1406,7 +1474,7 @@ export async function apiGetVerificationStatuses(): Promise<Record<string, Verif
   return clone(map)
 }
 
-/** Mock SMS/EMAIL channel enqueue — Sprint 1 records only. */
+/** Mock SMS/EMAIL channel enqueue - Sprint 1 records only. */
 export async function apiCreateNotification(input: {
   incidentId?: string
   type: string

@@ -4,6 +4,13 @@ import { format } from "date-fns"
 import { toast } from "sonner"
 import { ArrowLeft } from "lucide-react"
 
+import {
+  getIncident,
+  isCitizenEditable,
+  withdrawIncident,
+} from "@/api/incidents"
+import { SeverityBadge } from "@/components/incidents/severity-badge"
+import { StatusBadge } from "@/components/incidents/status-badge"
 import { UserShell } from "@/components/user/user-shell"
 import {
   AlertDialog,
@@ -16,73 +23,51 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import {
-  fetchIncidentById,
-  isCitizenEditable,
-  isUnsetStatus,
-  severityLabel,
-  statusLabel,
-  typeLabel,
-  withdrawMyIncident,
-  type Incident,
-} from "@/lib/incidents"
+import { statusLabel, typeLabel, urgencyLabel, type Incident } from "@/lib/incidents"
 import { useAuth } from "@/store/hooks"
-import { cn } from "@/lib/utils"
 
 function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { user, isAdmin } = useAuth()
+  const { isAdmin } = useAuth()
   const navigate = useNavigate()
   const [incident, setIncident] = useState<Incident | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [actionPending, setActionPending] = useState(false)
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    fetchIncidentById(id)
+    getIncident(id)
       .then((record) => {
-        if (!record) {
-          setError("Incident not found.")
-          return
-        }
-        if (!isAdmin && user && record.userId !== user.id) {
-          setError("You do not have access to this report.")
-          setIncident(null)
-          return
-        }
         setIncident(record)
         setError(null)
       })
-      .catch(() => setError("Could not load incident."))
+      .catch((err: unknown) => {
+        setIncident(null)
+        setError(err instanceof Error ? err.message : "Failed to load incident")
+      })
       .finally(() => setLoading(false))
-  }, [id, user, isAdmin])
+  }, [id])
 
+  const eligible = incident ? isCitizenEditable(incident) : false
   const when = incident?.createdAt
     ? format(new Date(incident.createdAt), "d MMMM yyyy, h:mm a")
     : "-"
 
-  const eligible =
-    incident && user && incident.userId === user.id && isCitizenEditable(incident)
-
   async function handleWithdraw() {
-    if (!incident || !user) return
+    if (!incident) return
     setActionPending(true)
     setError(null)
     try {
-      const updated = await withdrawMyIncident(incident.id, {
-        id: user.id,
-        name: user.name,
-      })
+      const updated = await withdrawIncident(incident.id)
       setIncident(updated)
-      toast.success("Report withdrawn.")
+      toast.success("Incident withdrawn.")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to withdraw report.")
+      setError(err instanceof Error ? err.message : "Failed to withdraw incident")
     } finally {
       setActionPending(false)
     }
@@ -90,11 +75,11 @@ function IncidentDetailPage() {
 
   return (
     <UserShell
-      title="Report details"
+      title="Incident details"
       end={
         <Link
-          to="/reports"
-          aria-label="Back to reports"
+          to="/incidents"
+          aria-label="Back to incidents"
           className="inline-flex items-center gap-1 text-primary"
         >
           <ArrowLeft className="size-4" />
@@ -103,12 +88,12 @@ function IncidentDetailPage() {
     >
       <div className="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 py-6 md:px-8">
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">Loading incident…</p>
         ) : error && !incident ? (
           <div className="space-y-3">
             <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" onClick={() => navigate("/reports")}>
-              Back to reports
+            <Button variant="outline" onClick={() => navigate("/incidents")}>
+              Back to incidents
             </Button>
           </div>
         ) : incident ? (
@@ -121,46 +106,67 @@ function IncidentDetailPage() {
                   </p>
                   <CardTitle className="text-lg">{incident.title}</CardTitle>
                 </div>
-                <Badge
-                  variant={isUnsetStatus(incident.status) ? "destructive" : "secondary"}
-                  className={cn("capitalize")}
-                >
-                  {statusLabel(incident.status)}
-                </Badge>
+                <StatusBadge status={incident.status} />
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <SeverityBadge severity={incident.severity} />
+                <span className="text-sm text-muted-foreground">
+                  {typeLabel(incident.type)}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  Urgency: {urgencyLabel(incident.urgency)}
+                </span>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+            <CardContent className="space-y-4 text-sm">
               {error ? (
                 <p className="rounded-md bg-destructive/10 px-3 py-2 text-destructive">
                   {error}
                 </p>
               ) : null}
-              <p className="text-muted-foreground">{incident.description}</p>
+
+              <div>
+                <p className="font-medium">Location</p>
+                <p className="text-muted-foreground">{incident.location}</p>
+              </div>
+              <div>
+                <p className="font-medium">Description</p>
+                <p className="text-muted-foreground">{incident.description}</p>
+              </div>
               <Separator />
               <dl className="grid gap-2">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Type</dt>
-                  <dd className="font-medium">{typeLabel(incident.type)}</dd>
+                  <dt className="text-muted-foreground">Reporter</dt>
+                  <dd className="text-right font-medium">
+                    {incident.reporterName || "-"}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Severity</dt>
-                  <dd className="font-medium">{severityLabel(incident.severity)}</dd>
+                  <dt className="text-muted-foreground">Phone</dt>
+                  <dd className="text-right font-medium">
+                    {incident.reporterPhone || "-"}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Location</dt>
-                  <dd className="text-right font-medium">{incident.location}</dd>
+                  <dt className="text-muted-foreground">Email</dt>
+                  <dd className="text-right font-medium">
+                    {incident.reporterEmail || "-"}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Reported</dt>
-                  <dd className="text-right">{when}</dd>
+                  <dt className="text-muted-foreground">Preferred contact</dt>
+                  <dd className="text-right font-medium">
+                    {incident.preferredContactMethod || "-"}
+                  </dd>
                 </div>
               </dl>
+              <p className="text-xs text-muted-foreground">Reported {when}</p>
 
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-1">
                 {eligible ? (
                   <>
-                    <Button variant="outline" asChild>
-                      <Link to={`/reports/${incident.id}/edit`}>Edit</Link>
+                    <Button asChild variant="outline">
+                      <Link to={`/incidents/${incident.id}/edit`}>Edit</Link>
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -170,10 +176,10 @@ function IncidentDetailPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Withdraw this report?</AlertDialogTitle>
+                          <AlertDialogTitle>Withdraw this incident?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            The report will be closed and kept on record for audit.
-                            You cannot undo this from here.
+                            The incident will be closed and kept on record for audit.
+                            This can&apos;t be undone from here.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -185,12 +191,12 @@ function IncidentDetailPage() {
                       </AlertDialogContent>
                     </AlertDialog>
                   </>
-                ) : !isAdmin ? (
+                ) : (
                   <p className="text-xs text-muted-foreground">
-                    This report is {statusLabel(incident.status).toLowerCase()} and
+                    This incident is {statusLabel(incident.status).toLowerCase()} and
                     can no longer be edited or withdrawn.
                   </p>
-                ) : null}
+                )}
 
                 {isAdmin ? (
                   <Button className="w-full font-semibold sm:w-auto" asChild>

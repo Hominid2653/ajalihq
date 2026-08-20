@@ -20,7 +20,7 @@ const SIDEBAR_KEY = "ajali-sidebar-expanded"
 
 const tabs = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/reports",   label: "Reports",   icon: List },
+  { to: "/incidents", label: "Incidents", icon: List },
   { to: "/map",       label: "Map",        icon: Map },
   { to: "/account",   label: "Account",    icon: UserRound },
 ]
@@ -43,7 +43,7 @@ function useSidebarExpanded() {
       if (raw === "0") setExpanded(false)
       if (raw === "1") setExpanded(true)
     } catch {
-      // storage blocked — ignore
+      // storage blocked - ignore
     }
   }, [])
 
@@ -171,11 +171,29 @@ function UserShell({ title, end, children, bleed = false }: UserShellProps) {
         {/* User / logout footer */}
         <div className={cn("flex flex-col gap-0.5 py-2", expanded ? "px-2" : "px-1")}>
           {expanded && session ? (
-            <div className="mb-1 truncate px-3 py-1.5 text-xs text-sidebar-foreground/60">
-              <p className="truncate font-semibold text-sidebar-foreground">
-                {session.name}
-              </p>
-              <p className="truncate">{session.email}</p>
+            <div className="mb-1 flex items-center gap-2.5 truncate px-3 py-1.5 text-xs text-sidebar-foreground/60">
+              {session.avatarUrl ? (
+                <img
+                  src={session.avatarUrl}
+                  alt=""
+                  className="size-8 shrink-0 rounded-full object-cover ring-1 ring-sidebar-border"
+                />
+              ) : (
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-[10px] font-bold text-sidebar-foreground">
+                  {session.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-sidebar-foreground">
+                  {session.name}
+                </p>
+                <p className="truncate">{session.email}</p>
+              </div>
             </div>
           ) : null}
 
@@ -205,25 +223,25 @@ function UserShell({ title, end, children, bleed = false }: UserShellProps) {
       </aside>
 
       {/* ══ Main content column ══ */}
-      <div className="flex min-h-svh min-w-0 flex-1 flex-col">
+      <div className="relative flex min-h-svh min-w-0 flex-1 flex-col">
 
         {/* Mobile + desktop header */}
         <header
           className={cn(
             "flex h-[var(--header-height-mobile)] shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-sm md:px-6",
             bleed &&
-              "md:absolute md:inset-x-0 md:top-0 md:z-10 md:h-auto md:border-b-0 md:bg-transparent md:px-5 md:pt-5 md:backdrop-blur-none"
+              "md:pointer-events-none md:absolute md:inset-x-0 md:top-0 md:z-10 md:h-auto md:border-b-0 md:bg-transparent md:px-5 md:pt-5 md:backdrop-blur-none"
           )}
         >
           {/* Mobile logomark */}
           <Logomark className="h-7 w-auto shrink-0 md:hidden" />
 
-          {/* Page title — compact floating chip on bleed (map) views */}
+          {/* Page title - compact floating chip on bleed (map) views */}
           <h1
             className={cn(
               "min-w-0 flex-1 text-center text-base font-bold tracking-tight md:text-left",
               bleed &&
-                "inline-flex w-fit max-w-full flex-none items-center gap-2 rounded-full bg-[var(--ajali-surface)] px-3.5 py-2 text-sm font-semibold text-foreground shadow-[var(--shadow-card)] ring-1 ring-border md:flex-none"
+                "pointer-events-auto inline-flex w-fit max-w-[min(100%,20rem)] flex-none items-center gap-2 rounded-full bg-[var(--ajali-surface)] px-3.5 py-2 text-sm font-semibold text-foreground shadow-[var(--shadow-card)] ring-1 ring-border md:max-w-none"
             )}
           >
             {title}
@@ -233,7 +251,7 @@ function UserShell({ title, end, children, bleed = false }: UserShellProps) {
           <div
             className={cn(
               "ml-auto flex items-center justify-end gap-2 text-sm font-semibold text-primary",
-              bleed && "md:ml-auto"
+              bleed && "pointer-events-auto md:ml-auto"
             )}
           >
             {end ?? <span className="inline-block w-8 md:hidden" />}

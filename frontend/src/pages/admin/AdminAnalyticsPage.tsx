@@ -232,7 +232,7 @@ function AdminAnalyticsPage() {
           <p className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">{error}</p>
         ) : null}
 
-        {/* KPI strip — from adminApi.getDashboardStats() */}
+        {/* KPI strip - from adminApi.getDashboardStats() */}
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
           {loading || !stats
             ? Array.from({ length: 8 }, (_, i) => (

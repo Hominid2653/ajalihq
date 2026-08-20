@@ -1,6 +1,6 @@
 import type { Role, AuthUser } from "@/types/auth"
 
-/** Central RBAC helpers — import these instead of inline role checks. */
+/** Central RBAC helpers - import these instead of inline role checks. */
 
 export const ROLES = {
   USER: "USER" as const,
@@ -33,7 +33,7 @@ export function defaultHomeForRole(role: Role): string {
   return role === ROLES.ADMIN ? "/admin" : "/dashboard"
 }
 
-/** Admin-only route prefix — used by guards and nav visibility. */
+/** Admin-only route prefix - used by guards and nav visibility. */
 export const ADMIN_ROUTE_PREFIX = "/admin"
 
 export function isAdminRoute(pathname: string): boolean {

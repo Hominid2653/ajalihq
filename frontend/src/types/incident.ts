@@ -25,7 +25,7 @@ export const STATUSES = [
 export type IncidentStatus = (typeof STATUSES)[number]
 
 export interface Incident {
-  id: number
+  id: string
   referenceNumber: string
   title: string
   description: string
@@ -33,7 +33,7 @@ export interface Incident {
   severity: Severity
   status: IncidentStatus
   location: string
-  userId: number
+  userId: string
   createdAt: string
   updatedAt?: string
 }
@@ -47,7 +47,7 @@ export interface IncidentInput {
   location: string
 }
 
-// labels for selects and badges.
+// Human-readable labels for selects and badges.
 export const INCIDENT_TYPE_LABELS: Record<IncidentType, string> = {
   traffic: "Traffic",
   fire: "Fire",
@@ -71,7 +71,6 @@ export const STATUS_LABELS: Record<IncidentStatus, string> = {
   resolved: "Resolved",
   withdrawn: "Withdrawn",
 }
-
 
 export function isEligibleForWithdrawOrDelete(incident: Incident): boolean {
   return incident.status === "reported"

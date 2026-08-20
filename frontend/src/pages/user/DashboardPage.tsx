@@ -3,62 +3,65 @@ import { Link } from "react-router-dom"
 import { ArrowRight } from "lucide-react"
 
 import { RoleGuard } from "@/components/auth/role-guard"
-import { AddReportButton } from "@/components/user/add-report-button"
-import { ReportRow } from "@/components/user/report-row"
+import { EmergencyReportButton } from "@/components/user/emergency-report-button"
 import { UserShell } from "@/components/user/user-shell"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
-import { Separator } from "@/components/ui/separator"
 import { ROLES } from "@/lib/rbac"
 import {
   fetchMyIncidents,
   isActiveStatus,
-  isUnsetStatus,
   type Incident,
 } from "@/lib/incidents"
 import { useAuth } from "@/store/hooks"
-import { cn } from "@/lib/utils"
 
 const NAIROBI: [number, number] = [36.8172, -1.2864]
 
 function DashboardPage() {
   const { user } = useAuth()
-  const [incidents, setIncidents] = useState<Incident[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [mapPins, setMapPins] = useState<
+    (Incident & { lat: number; lng: number })[]
+  >([])
 
   useEffect(() => {
     if (!user) return
     fetchMyIncidents(user.id)
-      .then(setIncidents)
-      .catch(() => {
-        setError("Could not load reports.")
-        setIncidents([])
-      })
+      .then((list) =>
+        setMapPins(
+          list.filter(
+            (i): i is Incident & { lat: number; lng: number } =>
+              isActiveStatus(i.status) && i.lat !== null && i.lng !== null
+          )
+        )
+      )
+      .catch(() => setMapPins([]))
   }, [user])
 
   if (!user) return null
-
-  const recent = incidents.slice(0, 10)
-  const mapPins = incidents.filter(
-    (i): i is Incident & { lat: number; lng: number } =>
-      isActiveStatus(i.status) && i.lat !== null && i.lng !== null
-  )
 
   return (
     <UserShell
       title="Dashboard"
       end={
-        <RoleGuard roles={[ROLES.ADMIN]}>
+        <div className="flex items-center gap-3">
           <Link
-            to="/admin"
-            className="text-sm font-semibold text-primary hover:underline"
+            to="/reports"
+            className="hidden text-sm font-semibold text-primary hover:underline sm:inline"
           >
-            Admin
+            My reports
           </Link>
-        </RoleGuard>
+          <RoleGuard roles={[ROLES.ADMIN]}>
+            <Link
+              to="/admin"
+              className="text-sm font-semibold text-primary hover:underline"
+            >
+              Admin
+            </Link>
+          </RoleGuard>
+        </div>
       }
     >
-      <section className="relative h-[200px] overflow-hidden bg-muted sm:h-[240px] md:h-[min(42vh,420px)] md:min-h-[280px]">
+      {/* Map hero */}
+      <section className="relative h-[min(38vh,280px)] overflow-hidden bg-muted sm:h-[min(42vh,340px)] md:h-[min(48vh,420px)]">
         <Map
           center={NAIROBI}
           zoom={11.5}
@@ -75,9 +78,7 @@ function DashboardPage() {
             >
               <MarkerContent>
                 <span
-                  className={cn(
-                    "block size-2.5 rounded-full border-2 border-white bg-[var(--ajali-primary)] shadow-sm"
-                  )}
+                  className="block size-2.5 rounded-full border-2 border-white bg-[var(--ajali-primary)] shadow-sm"
                   aria-hidden
                 />
               </MarkerContent>
@@ -93,76 +94,16 @@ function DashboardPage() {
         </Link>
       </section>
 
-      <section className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-5 md:px-8 lg:px-10">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            My recent reports
-          </h2>
-          <Link
-            className="hidden text-xs font-semibold text-primary hover:underline sm:inline"
-            to="/reports"
-          >
-            View all →
-          </Link>
-        </div>
-
-        <Separator />
-
-        {error ? (
-          <p className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {error}
-          </p>
-        ) : recent.length === 0 ? (
-          <Card className="bg-[var(--ajali-cream)]">
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              No reports yet. Tap <strong>Report</strong> to get started.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-1 lg:grid-cols-2">
-            {recent.map((incident) => (
-              <ReportRow key={incident.id} incident={incident} />
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-xs text-muted-foreground sm:hidden">
-          <span>
-            Showing {recent.length} of {incidents.length}
-          </span>
-          <Link className="font-semibold text-primary" to="/reports">
-            View all
-          </Link>
-        </div>
-        <p className="hidden text-xs text-muted-foreground sm:block">
-          Showing {recent.length} of {incidents.length} reports
-        </p>
+      {/* Emergency report CTA — primary dashboard action */}
+      <section className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 py-10 md:py-14">
+        <EmergencyReportButton />
+        <Link
+          to="/reports"
+          className="mt-8 text-sm font-semibold text-primary hover:underline sm:hidden"
+        >
+          View my reports →
+        </Link>
       </section>
-
-      <section className="mx-auto grid w-full max-w-4xl grid-cols-3 gap-3 px-4 pb-4 md:px-8 lg:px-10">
-        {[
-          { label: "Total", value: incidents.length },
-          {
-            label: "Pending",
-            value: incidents.filter((i) => isUnsetStatus(i.status)).length,
-          },
-          {
-            label: "Resolved",
-            value: incidents.filter((i) => i.status === "RESOLVED").length,
-          },
-        ].map(({ label, value }) => (
-          <Card key={label} size="sm" className="text-center">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-xs text-muted-foreground">{label}</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-1 pb-3">
-              <p className="text-2xl font-bold text-foreground">{value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      <AddReportButton />
     </UserShell>
   )
 }

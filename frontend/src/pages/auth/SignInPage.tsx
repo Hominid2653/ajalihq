@@ -7,16 +7,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { findUserByEmail, setPendingEmail, setSession } from "@/lib/auth"
+import { authenticate, setPendingEmail, signIn } from "@/lib/auth"
+import { defaultHomeForRole } from "@/lib/rbac"
+import { useAppDispatch } from "@/store/hooks"
 
 function SignInPage() {
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? "/dashboard"
+  const from = (location.state as { from?: string } | null)?.from
 
-  const [email,   setEmail]   = useState("amina@ajalihq.test")
+  const [email, setEmail] = useState("amina@ajalihq.test")
   const [password, setPassword] = useState("password")
-  const [error,   setError]   = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -24,11 +27,18 @@ function SignInPage() {
     setError(null)
     setPending(true)
     try {
-      if (!password.trim()) { setError("Enter your password."); return }
-      const user = await findUserByEmail(email)
-      if (!user) { setError("No account found for that email."); return }
-      setSession(user)
-      navigate(from, { replace: true })
+      if (!password.trim()) {
+        setError("Enter your password.")
+        return
+      }
+      const user = await authenticate(email, password)
+      if (!user) {
+        setError("No account found for that email.")
+        return
+      }
+      signIn(dispatch, user)
+      const target = from ?? defaultHomeForRole(user.role)
+      navigate(target, { replace: true })
     } finally {
       setPending(false)
     }
@@ -36,25 +46,33 @@ function SignInPage() {
 
   async function sendLoginLink() {
     setError(null)
-    if (!email.trim()) { setError("Enter your email to receive a login link."); return }
-    const user = await findUserByEmail(email)
-    if (!user) { setError("No account found for that email."); return }
+    if (!email.trim()) {
+      setError("Enter your email to receive a login link.")
+      return
+    }
+    const user = await authenticate(email)
+    if (!user) {
+      setError("No account found for that email.")
+      return
+    }
     setPendingEmail(email.trim())
     navigate("/signin/confirm")
   }
 
   return (
     <AuthShell>
-      {/* Logo + tagline */}
       <div className="mb-7 flex flex-col items-center gap-3 text-center">
         <Logomark className="h-16" />
         <p className="max-w-xs text-sm font-medium text-muted-foreground">
           Enter your email and we&apos;ll send you a login link.
         </p>
+        <p className="text-[11px] text-muted-foreground">
+          Demo: <span className="font-medium">amina@ajalihq.test</span> (USER) ·{" "}
+          <span className="font-medium">brian@ajalihq.test</span> (ADMIN)
+        </p>
       </div>
 
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-        {/* Email */}
         <div className="grid gap-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -68,8 +86,6 @@ function SignInPage() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-
-        {/* Password */}
         <div className="grid gap-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
@@ -97,7 +113,6 @@ function SignInPage() {
           </p>
         ) : null}
 
-        {/* Primary CTA */}
         <Button
           className="h-11 w-full text-sm font-bold"
           type="submit"
@@ -112,7 +127,6 @@ function SignInPage() {
           <Separator className="flex-1" />
         </div>
 
-        {/* Magic link */}
         <Button
           variant="outline"
           className="h-11 w-full border-border bg-[var(--ajali-surface)] text-sm font-bold text-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"

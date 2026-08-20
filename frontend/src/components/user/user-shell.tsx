@@ -13,7 +13,7 @@ import {
 import { Logomark } from "@/components/brand/logomark"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { getSession } from "@/lib/auth"
+import { useAuth } from "@/store/hooks"
 import { cn } from "@/lib/utils"
 
 const SIDEBAR_KEY = "ajali-sidebar-expanded"
@@ -102,7 +102,7 @@ function SidebarLink({
 
 function UserShell({ title, end, children, bleed = false }: UserShellProps) {
   const { expanded, toggle } = useSidebarExpanded()
-  const session = getSession()
+  const { user: session } = useAuth()
 
   return (
     <div className="flex min-h-svh bg-background text-foreground">

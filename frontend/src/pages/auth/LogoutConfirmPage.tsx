@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom"
 import { AuthShell } from "@/components/brand/auth-shell"
 import { Logomark } from "@/components/brand/logomark"
 import { Button } from "@/components/ui/button"
-import { clearSession } from "@/lib/auth"
+import { signOut } from "@/lib/auth"
+import { useAppDispatch } from "@/store/hooks"
 
 function LogoutConfirmPage() {
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
 
   function continueToLogin() {
-    clearSession()
+    signOut(dispatch)
     navigate("/signin", { replace: true })
   }
 

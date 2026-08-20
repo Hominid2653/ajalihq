@@ -1,85 +1,66 @@
+import {
+  apiCreateIncident,
+  apiDeleteIncident,
+  apiGetIncident,
+  apiGetIncidents,
+  apiUpdateIncident,
+  apiWithdrawIncident,
+  type IncidentRecord,
+} from "@/data/api"
 import type { Incident, IncidentInput } from "@/types/incident"
 
-const BASE_URL = "/api/incidents"
+// TODO: swap userId for the real signed-in user's id once auth is wired
+// into the incident flow. Hardcoded for now since RequireSession doesn't
+// yet expose the current user to these calls.
+const CURRENT_USER_ID = "1"
 
-function generateReferenceNumber(): string {
-  const year = new Date().getFullYear()
-  const random = Math.floor(1000 + Math.random() * 9000)
-  return `AJH-${year}-${random}`
-}
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const body = await response.text().catch(() => "")
-    throw new Error(
-      `Request failed (${response.status}): ${body || response.statusText}`
-    )
+function toIncident(record: IncidentRecord): Incident {
+  return {
+    id: record.id,
+    referenceNumber: record.referenceNumber,
+    title: record.title,
+    description: record.description,
+    incidentType: record.incidentType,
+    severity: record.severity,
+    status: record.status as Incident["status"],
+    location: record.location,
+    userId: record.userId,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
   }
-  return response.json() as Promise<T>
 }
 
 export async function listIncidents(): Promise<Incident[]> {
-  const response = await fetch(BASE_URL)
-  return handleResponse<Incident[]>(response)
+  const records = await apiGetIncidents()
+  return records.map(toIncident)
 }
 
-export async function getIncident(id: number | string): Promise<Incident> {
-  const response = await fetch(`${BASE_URL}/${id}`)
-  return handleResponse<Incident>(response)
-}
-
-export async function createIncident(
-  input: IncidentInput,
-  userId: number = 1
-): Promise<Incident> {
-  const payload = {
-    ...input,
-    referenceNumber: generateReferenceNumber(),
-    status: "reported" as const,
-    userId,
-    createdAt: new Date().toISOString(),
+export async function getIncident(id: string): Promise<Incident> {
+  const record = await apiGetIncident(id)
+  if (!record) {
+    throw new Error(`Incident ${id} not found`)
   }
+  return toIncident(record)
+}
 
-  const response = await fetch(BASE_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
-  return handleResponse<Incident>(response)
+export async function createIncident(input: IncidentInput): Promise<Incident> {
+  const record = await apiCreateIncident({ ...input, userId: CURRENT_USER_ID })
+  return toIncident(record)
 }
 
 export async function updateIncident(
-  id: number | string,
+  id: string,
   input: Partial<IncidentInput>
 ): Promise<Incident> {
-  const response = await fetch(`${BASE_URL}/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...input, updatedAt: new Date().toISOString() }),
-  })
-  return handleResponse<Incident>(response)
+  const record = await apiUpdateIncident(id, input)
+  return toIncident(record)
 }
 
-// Soft action: flips status to "withdrawn" rather than removing the record.
-export async function withdrawIncident(id: number | string): Promise<Incident> {
-  const response = await fetch(`${BASE_URL}/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      status: "withdrawn",
-      updatedAt: new Date().toISOString(),
-    }),
-  })
-  return handleResponse<Incident>(response)
+export async function withdrawIncident(id: string): Promise<Incident> {
+  const record = await apiWithdrawIncident(id)
+  return toIncident(record)
 }
 
-// Hard action: removes the record entirely.
-export async function deleteIncident(id: number | string): Promise<void> {
-  const response = await fetch(`${BASE_URL}/${id}`, { method: "DELETE" })
-  if (!response.ok) {
-    const body = await response.text().catch(() => "")
-    throw new Error(
-      `Request failed (${response.status}): ${body || response.statusText}`
-    )
-  }
+export async function deleteIncident(id: string): Promise<void> {
+  await apiDeleteIncident(id)
 }

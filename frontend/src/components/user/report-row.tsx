@@ -11,20 +11,28 @@ function statusVariant(
 ): "default" | "secondary" | "outline" | "destructive" | "ghost" | "link" {
   const s = (status ?? "").toLowerCase()
   if (s === "verified")                                return "secondary"
-  if (s === "under_investigation" || s === "progress") return "outline"
+  if (s === "in_progress")                              return "outline"
   if (s === "resolved")                                return "default"
   if (s === "closed")                                  return "outline"
   return "destructive"
 }
 
-function ReportRow({ incident }: { incident: Incident }) {
+function ReportRow({
+  incident,
+  href,
+}: {
+  incident: Incident
+  /** Override detail link (defaults to citizen report detail). */
+  href?: string
+}) {
   const unset = isUnsetStatus(incident.status)
   const when = incident.createdAt
     ? format(new Date(incident.createdAt), "d MMM, h:mm a")
     : "—"
+  const to = href ?? `/reports/${incident.id}`
 
   return (
-    <Link to="/coming-soon" className="block focus-visible:outline-none">
+    <Link to={to} className="block focus-visible:outline-none">
       <Card className="cursor-pointer bg-[var(--ajali-cream)] ring-border/50 transition-shadow hover:shadow-[var(--shadow-card)] focus-within:ring-2 focus-within:ring-ring">
         <CardContent className="flex items-start justify-between gap-4 py-3">
           <div className="min-w-0 flex-1">

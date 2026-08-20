@@ -1,40 +1,68 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { Search } from "lucide-react"
 
 import { AddReportButton } from "@/components/user/add-report-button"
 import { UserShell } from "@/components/user/user-shell"
 import { Badge } from "@/components/ui/badge"
-import { fetchIncidents } from "@/lib/incidents"
+import {
+  Map,
+  MapControls,
+  MapMarker,
+  MarkerContent,
+  MarkerPopup,
+} from "@/components/ui/map"
+import { statusLabel, type Incident } from "@/lib/incidents"
+import { cn } from "@/lib/utils"
+import { incidentApi } from "@/services/incident-api"
+
+/** Nairobi CBD — default map center */
+const NAIROBI: [number, number] = [36.8172, -1.2864]
+
+function markerTone(status: string) {
+  const s = (status ?? "").toLowerCase()
+  if (s === "verified") return "bg-[var(--status-verified)]"
+  if (s === "in_progress") {
+    return "bg-[var(--status-progress)]"
+  }
+  if (s === "resolved") return "bg-[var(--status-resolved)]"
+  if (s === "closed") return "bg-[var(--status-closed)]"
+  return "bg-[var(--ajali-primary)]"
+}
 
 function MapPage() {
-  const [activeCount, setActiveCount] = useState(0)
+  const [incidents, setIncidents] = useState<Incident[]>([])
 
   useEffect(() => {
-    fetchIncidents()
-      .then((incidents) => {
-        // Active = anything not resolved / closed
-        const count = incidents.filter((i) => {
-          const s = (i.status ?? "").toLowerCase()
-          return s !== "resolved" && s !== "closed"
-        }).length
-        setActiveCount(count)
-      })
-      .catch(() => setActiveCount(0))
+    incidentApi.getActive()
+      .then(setIncidents)
+      .catch(() => setIncidents([]))
   }, [])
+
+  const active = useMemo(
+    () =>
+      incidents.filter(
+        (incident): incident is Incident & { lat: number; lng: number } =>
+          incident.lat !== null && incident.lng !== null
+      ),
+    [incidents]
+  )
 
   return (
     <UserShell
       bleed
       title={
         <>
-          <span className="size-2 shrink-0 rounded-full bg-[var(--ajali-primary)]" aria-hidden />
+          <span
+            className="size-2 shrink-0 rounded-full bg-[var(--ajali-primary)]"
+            aria-hidden
+          />
           <span className="truncate">Active incidents</span>
           <Badge
             variant="default"
             className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums"
           >
-            {activeCount}
+            {active.length}
           </Badge>
         </>
       }
@@ -45,19 +73,52 @@ function MapPage() {
       }
     >
       <div className="relative min-h-0 flex-1 bg-muted">
-        <img
-          src="/splash.png"
-          alt="Incident map"
-          className="absolute inset-0 size-full object-cover"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute top-1/2 left-1/2 size-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/25 ring-1 ring-white/40 sm:size-56 md:size-64"
-        />
-        <span className="absolute top-[38%] left-[42%] size-3 rounded-full bg-primary ring-2 ring-white" />
-        <span className="absolute top-[48%] left-[58%] size-3 rounded-full bg-primary ring-2 ring-white" />
-        <span className="absolute top-[55%] left-[36%] size-3 rounded-full bg-primary ring-2 ring-white" />
-        <span className="absolute top-[32%] left-[70%] size-3 rounded-full bg-primary ring-2 ring-white" />
+        <Map
+          center={NAIROBI}
+          zoom={12}
+          theme="light"
+          className="absolute inset-0 size-full rounded-none"
+        >
+          <MapControls
+            position="bottom-right"
+            showZoom
+            showLocate
+            showFullscreen
+            className="mb-20 md:mb-4"
+          />
+
+          {active.map((incident) => (
+            <MapMarker
+              key={incident.id}
+              longitude={incident.lng}
+              latitude={incident.lat}
+            >
+              <MarkerContent>
+                <span
+                  className={cn(
+                    "block size-3.5 rounded-full border-2 border-white shadow-md ring-1 ring-black/10",
+                    markerTone(incident.status)
+                  )}
+                  aria-hidden
+                />
+              </MarkerContent>
+              <MarkerPopup closeButton className="min-w-[200px] max-w-[260px]">
+                <div className="space-y-1 p-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    {incident.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {incident.location}
+                  </p>
+                  <p className="text-xs font-medium capitalize text-primary">
+                    {statusLabel(incident.status)}
+                  </p>
+                </div>
+              </MarkerPopup>
+            </MapMarker>
+          ))}
+        </Map>
+
         <AddReportButton
           searchHref="/search"
           className="inset-x-auto right-4 justify-end"

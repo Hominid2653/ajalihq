@@ -86,4 +86,32 @@ function SupportPage() {
   )
 }
 
-export { TermsPage, SupportPage }
+function PrivacyPage() {
+  return (
+    <DocumentPage title="Privacy policy" subtitle="Effective date: August 2026">
+      <div className="space-y-4 text-sm leading-6 text-muted-foreground">
+        <p className="font-semibold text-foreground">
+          Ajali! collects only the information needed to verify and respond to
+          emergency reports.
+        </p>
+        <h2 className="text-base font-bold text-foreground">What we collect</h2>
+        <p>
+          Account details (name, email, phone), incident descriptions, location
+          coordinates, and optional media you upload with a report.
+        </p>
+        <h2 className="text-base font-bold text-foreground">How we use it</h2>
+        <p>
+          To verify reports, coordinate response, show active incidents on the
+          public map, and notify you about status changes.
+        </p>
+        <h2 className="text-base font-bold text-foreground">Sharing</h2>
+        <p>
+          Verified active incidents may appear publicly on the live map. Personal
+          contact details are not shown on the public map.
+        </p>
+      </div>
+    </DocumentPage>
+  )
+}
+
+export { TermsPage, SupportPage, PrivacyPage }

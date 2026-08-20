@@ -1,37 +1,21 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
-import { format, subHours, subDays } from "date-fns"
+import { subHours, subDays } from "date-fns"
 
 import { AdminShell } from "@/components/admin/admin-shell"
-import { SeverityBadge, StatusBadge, UrgencyBadge } from "@/components/admin/status-badge"
+import { IncidentMapMarker } from "@/components/admin/incident-map-marker"
 import {
   Map,
   MapControls,
-  MapMarker,
-  MarkerContent,
-  MarkerPopup,
 } from "@/components/ui/map"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { incidentApi } from "@/services/incident-api"
 import type { Incident, IncidentSeverity, IncidentStatus, IncidentType, IncidentUrgency } from "@/types/incident"
 import { typeLabel } from "@/types/incident"
-import { cn } from "@/lib/utils"
 
 const KENYA: [number, number] = [37.9062, -0.0236]
 
 type TimeRange = "all" | "24h" | "7d" | "30d"
-
-function markerTone(status: IncidentStatus, urgency: IncidentUrgency) {
-  if (urgency === "CRITICAL") return "bg-[var(--urgency-critical)] ring-2 ring-[var(--urgency-critical)]/40"
-  return {
-    PENDING: "bg-[var(--status-pending)]",
-    VERIFIED: "bg-[var(--status-verified)]",
-    IN_PROGRESS: "bg-[var(--status-progress)]",
-    RESOLVED: "bg-[var(--status-resolved)]",
-    CLOSED: "bg-[var(--status-closed)]",
-  }[status]
-}
 
 function withinTimeRange(createdAt: string, range: TimeRange) {
   if (range === "all") return true
@@ -145,39 +129,7 @@ function AdminMapPage() {
           <MapControls position="bottom-right" showZoom showLocate showFullscreen />
           {!loading &&
             visible.map((incident) => (
-              <MapMarker key={incident.id} longitude={incident.lng} latitude={incident.lat}>
-                <MarkerContent>
-                  <button
-                    type="button"
-                    className={cn(
-                      "block size-4 rounded-full border-2 border-white shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      markerTone(incident.status, incident.urgency)
-                    )}
-                    aria-label={`${incident.reference} ${typeLabel(incident.type)} ${incident.status}`}
-                  />
-                </MarkerContent>
-                <MarkerPopup>
-                  <div className="space-y-2 p-1 text-sm">
-                    <p className="font-mono text-xs">{incident.reference}</p>
-                    <p className="font-semibold">{typeLabel(incident.type)}</p>
-                    <p className="text-muted-foreground">{incident.location}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(incident.createdAt), "d MMM yyyy, h:mm a")}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <UrgencyBadge urgency={incident.urgency} />
-                      <SeverityBadge severity={incident.severity} />
-                      <StatusBadge status={incident.status} />
-                    </div>
-                    <Link
-                      className="inline-block text-xs font-semibold text-primary"
-                      to={`/admin/incidents/${incident.id}`}
-                    >
-                      View incident →
-                    </Link>
-                  </div>
-                </MarkerPopup>
-              </MapMarker>
+              <IncidentMapMarker key={incident.id} incident={incident} detailed />
             ))}
         </Map>
       </div>

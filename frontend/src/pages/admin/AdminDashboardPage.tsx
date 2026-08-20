@@ -1,23 +1,20 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { format } from "date-fns"
-import { ArrowRight, ChevronRight, MapPin, Search, TriangleAlert, UserRound } from "lucide-react"
+import { ArrowRight, ChevronRight, Search, TriangleAlert, UserRound } from "lucide-react"
 
 import { AdminPage, AdminShell } from "@/components/admin/admin-shell"
 import { StatusBadge } from "@/components/admin/status-badge"
 import {
   Map,
   MapControls,
-  MapMarker,
-  MarkerContent,
-  MarkerPopup,
 } from "@/components/ui/map"
+import { IncidentMapMarker } from "@/components/admin/incident-map-marker"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { incidentApi } from "@/services/incident-api"
 import type { Incident } from "@/types/incident"
 import { statusLabel, typeLabel } from "@/types/incident"
-import { cn } from "@/lib/utils"
 
 /** Kenya overview — matches operational map framing */
 const KENYA: [number, number] = [37.0, -0.5]
@@ -138,42 +135,7 @@ function AdminDashboardPage() {
               >
                 <MapControls position="bottom-left" showZoom showLocate={false} showFullscreen={false} />
                 {mapped.map((incident) => (
-                  <MapMarker
-                    key={incident.id}
-                    longitude={incident.lng}
-                    latitude={incident.lat}
-                  >
-                    <MarkerContent>
-                      <button
-                        type="button"
-                        className="group relative flex size-9 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        aria-label={`${incident.reference} ${typeLabel(incident.type)}`}
-                      >
-                        <MapPin
-                          className={cn(
-                            "size-8 fill-[var(--ajali-primary)] text-[var(--ajali-primary)] drop-shadow-md transition-transform group-hover:scale-110",
-                            incident.urgency === "CRITICAL" &&
-                              "fill-[var(--urgency-critical)] text-[var(--urgency-critical)]"
-                          )}
-                          strokeWidth={1.25}
-                        />
-                      </button>
-                    </MarkerContent>
-                    <MarkerPopup>
-                      <div className="space-y-2 p-1 text-sm">
-                        <p className="font-mono text-xs text-muted-foreground">{incident.reference}</p>
-                        <p className="font-semibold">{typeLabel(incident.type)}</p>
-                        <p className="text-muted-foreground">{incident.location}</p>
-                        <StatusBadge status={incident.status} />
-                        <Link
-                          className="inline-block text-xs font-semibold text-primary"
-                          to={`/admin/incidents/${incident.id}`}
-                        >
-                          View incident →
-                        </Link>
-                      </div>
-                    </MarkerPopup>
-                  </MapMarker>
+                  <IncidentMapMarker key={incident.id} incident={incident} />
                 ))}
               </Map>
             )}

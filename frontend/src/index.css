@@ -69,10 +69,14 @@
     --color-status-closed:   var(--status-closed);
 
     /* Severity tokens */
-    --color-severity-low:      var(--severity-low);
-    --color-severity-medium:   var(--severity-medium);
-    --color-severity-high:     var(--severity-high);
+    --color-severity-minor:    var(--severity-minor);
+    --color-severity-moderate: var(--severity-moderate);
+    --color-severity-major:    var(--severity-major);
     --color-severity-critical: var(--severity-critical);
+    --color-urgency-low:      var(--urgency-low);
+    --color-urgency-medium:   var(--urgency-medium);
+    --color-urgency-high:     var(--urgency-high);
+    --color-urgency-critical: var(--urgency-critical);
 
     /* System feedback */
     --color-success: var(--success);
@@ -171,10 +175,14 @@
     --status-closed:   #6B7280;   /* gray */
 
     /* ── Severity ── */
-    --severity-low:      #22C55E;
-    --severity-medium:   #F59E0B;
-    --severity-high:     #EF4444;
+    --severity-minor:    #22C55E;
+    --severity-moderate: #F59E0B;
+    --severity-major:    #EF4444;
     --severity-critical: #7F1D1D;
+    --urgency-low:      #64748B;
+    --urgency-medium:   #F59E0B;
+    --urgency-high:     #F97316;
+    --urgency-critical: #DC2626;
 
     /* ── System feedback ── */
     --success: #22C55E;
@@ -235,6 +243,24 @@
     @media (prefers-reduced-motion: no-preference) {
         html { scroll-behavior: smooth; }
     }
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+    }
+  .maplibregl-popup-tip {
+    @apply hidden!;
+    }
+  .maplibregl-ctrl-attrib {
+    @apply bg-background! text-muted-foreground! border-border! rounded-md! border! shadow-sm!;
+    }
+  .maplibregl-ctrl-attrib a {
+    @apply text-muted-foreground!;
+    }
+  .maplibregl-ctrl-attrib a:hover {
+    @apply text-foreground!;
+    }
+  .maplibregl-ctrl-attrib-button {
+    @apply bg-transparent! dark:invert;
+    }
 }
 
 /* ═══════════════════════════════════════════════
@@ -248,10 +274,14 @@
     .status-resolved { color: var(--status-resolved); }
     .status-closed   { color: var(--status-closed); }
 
-    .severity-low      { color: var(--severity-low); }
-    .severity-medium   { color: var(--severity-medium); }
-    .severity-high     { color: var(--severity-high); }
+    .severity-minor    { color: var(--severity-minor); }
+    .severity-moderate { color: var(--severity-moderate); }
+    .severity-major    { color: var(--severity-major); }
     .severity-critical { color: var(--severity-critical); }
+    .urgency-low      { color: var(--urgency-low); }
+    .urgency-medium   { color: var(--urgency-medium); }
+    .urgency-high     { color: var(--urgency-high); }
+    .urgency-critical { color: var(--urgency-critical); }
 
     /* Safe-area padding for PWA on notched phones */
     .pb-safe { padding-bottom: max(var(--bottom-nav-height), env(safe-area-inset-bottom, var(--bottom-nav-height))); }

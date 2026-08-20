@@ -2,3 +2,22 @@
 .cursor/
 .cursorignore
 .cursorrules
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build / caches
+dist/
+dist-ssr/
+*.local
+.npm/
+.cache/

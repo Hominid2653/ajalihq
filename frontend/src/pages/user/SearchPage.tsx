@@ -6,16 +6,21 @@ import { ReportRow } from "@/components/user/report-row"
 import { UserShell } from "@/components/user/user-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { fetchIncidents, type Incident } from "@/lib/incidents"
+import { fetchMyIncidents, type Incident } from "@/lib/incidents"
+import { useAuth } from "@/store/hooks"
 
 function SearchPage() {
+  const { user } = useAuth()
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [query, setQuery] = useState("")
   const [submitted, setSubmitted] = useState("")
 
   useEffect(() => {
-    fetchIncidents().then(setIncidents).catch(() => setIncidents([]))
-  }, [])
+    if (!user) return
+    fetchMyIncidents(user.id)
+      .then(setIncidents)
+      .catch(() => setIncidents([]))
+  }, [user])
 
   const results = useMemo(() => {
     const term = submitted.trim().toLowerCase()
@@ -50,7 +55,7 @@ function SearchPage() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Enter a search term"
-          className="h-11 bg-white"
+          className="h-11 bg-[var(--ajali-surface)]"
         />
         <Button
           className="size-11 shrink-0"

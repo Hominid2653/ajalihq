@@ -1,43 +1,31 @@
-import { apiCreateUser, apiGetUsers, type UserRecord } from "@/data/api"
+/**
+ * Auth service — thin facade over api.ts.
+ * Sprint 2: swap internals to call Flask; keep this interface stable for Redux + pages.
+ */
+import {
+  apiAuthenticate,
+  apiCreateUser,
+  apiGetUsers,
+  type UserRecord,
+} from "@/data/api"
+import {
+  clearPendingEmail,
+  getPendingEmail,
+  readSession,
+  removeSession,
+  setPendingEmail,
+  writeSession,
+} from "@/lib/auth-storage"
+import { login, logout } from "@/store/authSlice"
+import { toAuthUser, type AuthUser } from "@/types/auth"
+import type { AppDispatch } from "@/store/index"
 
-export type SessionUser = {
-  id: string
-  name: string
-  email: string
-  role: string
-}
+export { getPendingEmail, setPendingEmail, clearPendingEmail }
 
-const STORAGE_KEY = "ajali-session"
-const PENDING_EMAIL_KEY = "ajali-pending-email"
+export type { AuthUser }
 
-export function getSession(): SessionUser | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as SessionUser
-  } catch {
-    return null
-  }
-}
-
-export function setSession(user: SessionUser) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
-}
-
-export function clearSession() {
-  localStorage.removeItem(STORAGE_KEY)
-}
-
-export function setPendingEmail(email: string) {
-  sessionStorage.setItem(PENDING_EMAIL_KEY, email)
-}
-
-export function getPendingEmail() {
-  return sessionStorage.getItem(PENDING_EMAIL_KEY) ?? ""
-}
-
-export function clearPendingEmail() {
-  sessionStorage.removeItem(PENDING_EMAIL_KEY)
+export function mapUserRecord(user: UserRecord): AuthUser {
+  return toAuthUser(user)
 }
 
 export async function findUserByEmail(email: string): Promise<UserRecord | null> {
@@ -46,11 +34,46 @@ export async function findUserByEmail(email: string): Promise<UserRecord | null>
   return users.find((user) => user.email.toLowerCase() === normalized) ?? null
 }
 
-export async function createUser(input: {
+/** Mock authenticate — password ignored in Sprint 1. */
+export async function authenticate(
+  email: string,
+  _password?: string
+): Promise<AuthUser | null> {
+  const user = await apiAuthenticate(email)
+  return user ? mapUserRecord(user) : null
+}
+
+export async function registerUser(input: {
   name: string
   email: string
   phone: string
-  role?: string
-}): Promise<UserRecord> {
-  return apiCreateUser(input)
+}): Promise<AuthUser> {
+  const user = await apiCreateUser({ ...input, role: "USER" })
+  return mapUserRecord(user)
 }
+
+export function signIn(dispatch: AppDispatch, user: AuthUser) {
+  dispatch(login(user))
+}
+
+export function signOut(dispatch: AppDispatch) {
+  dispatch(logout())
+}
+
+/** Read session directly from storage (non-reactive). Prefer useAuth(). */
+export function getSession(): AuthUser | null {
+  return readSession()
+}
+
+/** @deprecated Prefer signIn(dispatch, user) */
+export function setSession(user: AuthUser) {
+  writeSession(user)
+}
+
+/** @deprecated Prefer signOut(dispatch) */
+export function clearSession() {
+  removeSession()
+}
+
+/** @deprecated Use registerUser */
+export const createUser = registerUser

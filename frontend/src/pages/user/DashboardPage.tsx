@@ -2,57 +2,97 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { ArrowRight } from "lucide-react"
 
+import { RoleGuard } from "@/components/auth/role-guard"
 import { AddReportButton } from "@/components/user/add-report-button"
 import { ReportRow } from "@/components/user/report-row"
 import { UserShell } from "@/components/user/user-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
 import { Separator } from "@/components/ui/separator"
-import { getSession } from "@/lib/auth"
-import { fetchIncidents, type Incident } from "@/lib/incidents"
+import { ROLES } from "@/lib/rbac"
+import {
+  fetchMyIncidents,
+  isActiveStatus,
+  isUnsetStatus,
+  type Incident,
+} from "@/lib/incidents"
+import { useAuth } from "@/store/hooks"
+import { cn } from "@/lib/utils"
+
+const NAIROBI: [number, number] = [36.8172, -1.2864]
 
 function DashboardPage() {
-  const session = getSession()
+  const { user } = useAuth()
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchIncidents()
+    if (!user) return
+    fetchMyIncidents(user.id)
       .then(setIncidents)
-      .catch(() => { setError("Could not load reports."); setIncidents([]) })
-  }, [])
+      .catch(() => {
+        setError("Could not load reports.")
+        setIncidents([])
+      })
+  }, [user])
 
-  if (!session) return null
+  if (!user) return null
 
   const recent = incidents.slice(0, 10)
+  const mapPins = incidents.filter(
+    (i): i is Incident & { lat: number; lng: number } =>
+      isActiveStatus(i.status) && i.lat !== null && i.lng !== null
+  )
 
   return (
     <UserShell
       title="Dashboard"
       end={
-        session.role === "admin" ? (
-          <Link to="/coming-soon" className="text-sm font-semibold text-primary hover:underline">
+        <RoleGuard roles={[ROLES.ADMIN]}>
+          <Link
+            to="/admin"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
             Admin
           </Link>
-        ) : undefined
+        </RoleGuard>
       }
     >
-      {/* Hero / map thumbnail */}
       <section className="relative h-[200px] overflow-hidden bg-muted sm:h-[240px] md:h-[min(42vh,420px)] md:min-h-[280px]">
-        <img src="/splash.png" alt="" className="size-full object-cover" />
-        <div
-          aria-hidden="true"
-          className="absolute top-1/2 left-1/2 size-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/20 ring-1 ring-white/30 sm:size-44"
-        />
+        <Map
+          center={NAIROBI}
+          zoom={11.5}
+          theme="light"
+          interactive={false}
+          attributionControl={false}
+          className="pointer-events-none absolute inset-0 size-full rounded-none"
+        >
+          {mapPins.map((incident) => (
+            <MapMarker
+              key={incident.id}
+              longitude={incident.lng}
+              latitude={incident.lat}
+            >
+              <MarkerContent>
+                <span
+                  className={cn(
+                    "block size-2.5 rounded-full border-2 border-white bg-[var(--ajali-primary)] shadow-sm"
+                  )}
+                  aria-hidden
+                />
+              </MarkerContent>
+            </MapMarker>
+          ))}
+        </Map>
         <Link
           to="/map"
-          className="absolute right-4 bottom-4 flex size-11 items-center justify-center rounded-full bg-[var(--ajali-primary)] text-white shadow-elevated transition-colors hover:bg-[var(--ajali-primary-hover)]"
+          className="absolute right-4 bottom-4 z-10 flex size-11 items-center justify-center rounded-full bg-[var(--ajali-primary)] text-white shadow-elevated transition-colors hover:bg-[var(--ajali-primary-hover)]"
           aria-label="Open map"
         >
           <ArrowRight className="size-5" />
         </Link>
       </section>
 
-      {/* Recent reports */}
       <section className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-5 md:px-8 lg:px-10">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
@@ -99,17 +139,16 @@ function DashboardPage() {
         </p>
       </section>
 
-      {/* Stats row */}
       <section className="mx-auto grid w-full max-w-4xl grid-cols-3 gap-3 px-4 pb-4 md:px-8 lg:px-10">
         {[
           { label: "Total", value: incidents.length },
           {
             label: "Pending",
-            value: incidents.filter((i) => ["reported", "pending", "new"].includes((i.status ?? "").toLowerCase())).length,
+            value: incidents.filter((i) => isUnsetStatus(i.status)).length,
           },
           {
             label: "Resolved",
-            value: incidents.filter((i) => i.status === "resolved").length,
+            value: incidents.filter((i) => i.status === "RESOLVED").length,
           },
         ].map(({ label, value }) => (
           <Card key={label} size="sm" className="text-center">

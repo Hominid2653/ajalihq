@@ -72,7 +72,7 @@ function ReportsDesktopTable({ incidents }: { incidents: Incident[] }) {
                 </TableCell>
                 <TableCell>
                   <Link
-                    to={`/reports/${incident.id}`}
+                    to={`/incidents/${incident.id}`}
                     className="font-medium text-foreground hover:text-primary hover:underline"
                   >
                     {incident.title}
@@ -104,7 +104,7 @@ function ReportsDesktopTable({ incidents }: { incidents: Incident[] }) {
                 </TableCell>
                 <TableCell>
                   <Link
-                    to={`/reports/${incident.id}`}
+                    to={`/incidents/${incident.id}`}
                     className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted hover:text-foreground"
                     aria-label={`Open ${incident.reference}`}
                   >

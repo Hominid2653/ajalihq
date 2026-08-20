@@ -18,7 +18,7 @@ function EmergencyReportButton({
   return (
     <div className={cn("flex flex-col items-center gap-4", className)}>
       <Link
-        to="/report"
+        to="/incidents/new"
         aria-label="Report an emergency incident"
         className={cn(
           "group relative flex items-center justify-center rounded-full",

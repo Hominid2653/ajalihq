@@ -286,4 +286,39 @@
     /* Safe-area padding for PWA on notched phones */
     .pb-safe { padding-bottom: max(var(--bottom-nav-height), env(safe-area-inset-bottom, var(--bottom-nav-height))); }
     .h-header-mobile { height: var(--header-height-mobile); }
+
+    /* Emergency report CTA — expanding ripples */
+    .emergency-ripple {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 100%;
+        height: 100%;
+        border-radius: 9999px;
+        border: 2px solid color-mix(in oklch, var(--destructive) 70%, white);
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+        pointer-events: none;
+        animation: emergency-ripple 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+    .emergency-ripple:nth-child(2) { animation-delay: 0.8s; }
+    .emergency-ripple:nth-child(3) { animation-delay: 1.6s; }
+}
+
+@keyframes emergency-ripple {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.55;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2.35);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .emergency-ripple {
+        animation: none;
+        opacity: 0;
+    }
 }

@@ -1,5 +1,6 @@
 import { incidentApi } from "@/services/incident-api"
 import {
+  severityLabel,
   typeLabel,
   type IncidentSeverity,
   type IncidentType,
@@ -38,6 +39,13 @@ export const INCIDENT_TYPES: { value: IncidentType; label: string }[] = [
   { value: "disaster", label: typeLabel("disaster") },
 ]
 
+export const INCIDENT_SEVERITIES: { value: IncidentSeverity; label: string }[] = [
+  { value: "MINOR", label: severityLabel("MINOR") },
+  { value: "MODERATE", label: severityLabel("MODERATE") },
+  { value: "MAJOR", label: severityLabel("MAJOR") },
+  { value: "CRITICAL", label: severityLabel("CRITICAL") },
+]
+
 export const INCIDENT_STATUSES = [
   "PENDING",
   "VERIFIED",
@@ -52,6 +60,11 @@ export function isUnsetStatus(status: string) {
 
 export function isActiveStatus(status: string) {
   return status === "IN_PROGRESS"
+}
+
+/** Citizen may edit / withdraw only while the report is still pending review. */
+export function isCitizenEditable(incident: Incident): boolean {
+  return !incident.archived && incident.status === "PENDING"
 }
 
 /** All incidents (admin). */
@@ -97,5 +110,53 @@ export async function createIncident(input: {
       id: input.userId,
       name: input.reporterName ?? "Citizen reporter",
     }
+  )
+}
+
+export async function updateMyIncident(
+  id: string,
+  patch: {
+    title?: string
+    description?: string
+    type?: IncidentType
+    severity?: IncidentSeverity
+    location?: string
+    lat?: number | null
+    lng?: number | null
+  },
+  actor: { id: string; name: string }
+): Promise<Incident> {
+  const current = await incidentApi.getById(id)
+  if (!current) throw new Error("Incident not found.")
+  if (current.userId !== actor.id) {
+    throw new Error("You can only edit your own reports.")
+  }
+  if (!isCitizenEditable(current)) {
+    throw new Error("Only pending reports can be edited.")
+  }
+  return incidentApi.update(id, patch, actor)
+}
+
+/** Soft withdraw — closes a PENDING report (keeps audit trail; no hard delete). */
+export async function withdrawMyIncident(
+  id: string,
+  actor: { id: string; name: string }
+): Promise<Incident> {
+  const current = await incidentApi.getById(id)
+  if (!current) throw new Error("Incident not found.")
+  if (current.userId !== actor.id) {
+    throw new Error("You can only withdraw your own reports.")
+  }
+  if (!isCitizenEditable(current)) {
+    throw new Error("Only pending reports can be withdrawn.")
+  }
+  return incidentApi.close(
+    id,
+    {
+      reason: "Withdrawn by reporter",
+      reasonCode: "OTHER",
+      failVerification: true,
+    },
+    actor
   )
 }

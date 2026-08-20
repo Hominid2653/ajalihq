@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom"
 
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { ROLES } from "@/lib/rbac"
@@ -22,11 +22,18 @@ import { LandingPage } from "@/pages/public/LandingPage"
 import { PrivacyPage, SupportPage, TermsPage } from "@/pages/public/LegalPages"
 import { AccountPage } from "@/pages/user/AccountPage"
 import { DashboardPage } from "@/pages/user/DashboardPage"
+import { EditReportPage } from "@/pages/user/EditReportPage"
 import { IncidentDetailPage } from "@/pages/user/IncidentDetailPage"
 import { MapPage } from "@/pages/user/MapPage"
 import { ReportIncidentPage } from "@/pages/user/ReportIncidentPage"
 import { ReportsPage } from "@/pages/user/ReportsPage"
 import { SearchPage } from "@/pages/user/SearchPage"
+
+/** Preserve bookmarks from the pre-merge `/incidents/:id` routes. */
+function LegacyIncidentRedirect({ suffix = "" }: { suffix?: string }) {
+  const { id } = useParams<{ id: string }>()
+  return <Navigate to={`/reports/${id}${suffix}`} replace />
+}
 
 function App() {
   return (
@@ -70,6 +77,14 @@ function App() {
           }
         />
         <Route
+          path="/reports/:id/edit"
+          element={
+            <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
+              <EditReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/report"
           element={
             <ProtectedRoute roles={[ROLES.USER, ROLES.ADMIN]}>
@@ -77,6 +92,13 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/incidents" element={<Navigate to="/reports" replace />} />
+        <Route path="/incidents/new" element={<Navigate to="/report" replace />} />
+        <Route
+          path="/incidents/:id/edit"
+          element={<LegacyIncidentRedirect suffix="/edit" />}
+        />
+        <Route path="/incidents/:id" element={<LegacyIncidentRedirect />} />
         <Route
           path="/map"
           element={

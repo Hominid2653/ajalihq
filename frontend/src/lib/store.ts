@@ -1,4 +1,5 @@
-import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { configureStore, createSlice } from "@reduxjs/toolkit";
+import type { PayloadAction } from "@reduxjs/toolkit";
 
 // Strictly typed notification statuses supporting citizen and admin flows
 export type NotificationStatus = "new" | "rejected" | "resolved" | "closed" | "under investigation" | "received";

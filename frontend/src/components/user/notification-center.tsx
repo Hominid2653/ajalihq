@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { markAsRead } from "../../lib/store";
+import type { RootState } from "../../lib/store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,58 +15,17 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 import { Bell, AlertTriangle, CheckCircle, Eye, EyeOff } from "lucide-react";
 
-type NotificationStatus = "new" | "rejected" | "resolved" | "closed";
-
-type NotificationItem = {
-  id: string;
-  title: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean;
-  statusUpdate: NotificationStatus;
-};
-
-const initialNotifications: NotificationItem[] = [
-  {
-    id: "1",
-    title: "Incident escalated",
-    message: "A new report has been assigned for review by the response team.",
-    timestamp: "2 minutes ago",
-    isRead: false,
-    statusUpdate: "new",
-  },
-  {
-    id: "2",
-    title: "Report resolved",
-    message: "The maintenance team marked the issue as resolved and closed.",
-    timestamp: "18 minutes ago",
-    isRead: true,
-    statusUpdate: "resolved",
-  },
-  {
-    id: "3",
-    title: "Submission rejected",
-    message: "Additional details were requested before the incident can proceed.",
-    timestamp: "1 hour ago",
-    isRead: false,
-    statusUpdate: "rejected",
-  },
-];
-
 /**
  * Notification Center component embedded in the citizen/admin dashboard header.
- * Displays real-time updates regarding submitted incident records.
+ * Interacts directly with Redux Toolkit state to remain consistent across navigation views.
  */
 export const NotificationCenter: React.FC = () => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
-
-  const unreadCount = notifications.filter((item) => !item.isRead).length;
-
-  const markAsRead = (id: string) => {
-    setNotifications((current) =>
-      current.map((item) => (item.id === id ? { ...item, isRead: true } : item))
-    );
-  };
+  const dispatch = useDispatch();
+  
+  // Select notification data arrays and live counters straight from the Redux store
+  const { items: notifications, unreadCount } = useSelector(
+    (state: RootState) => state.notifications
+  );
 
   return (
     <DropdownMenu>
@@ -99,7 +61,8 @@ export const NotificationCenter: React.FC = () => {
             notifications.map((item) => (
               <DropdownMenuItem
                 key={item.id}
-                onClick={() => markAsRead(item.id)}
+                // Dispatch action globally to synchronize other components instantly
+                onClick={() => dispatch(markAsRead(item.id))}
                 className={`flex cursor-pointer items-start gap-3 border-b border-slate-50 p-4 transition-colors ${
                   !item.isRead ? "bg-amber-50/40 hover:bg-amber-50" : "hover:bg-slate-50"
                 }`}

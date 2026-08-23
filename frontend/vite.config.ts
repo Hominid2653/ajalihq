@@ -6,6 +6,8 @@ import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
 
 export default defineConfig({
+  envDir: ".",
+  envPrefix: "VITE_",
   plugins: [
     react(),
     tailwindcss(),
@@ -14,30 +16,46 @@ export default defineConfig({
       registerType: "autoUpdate",
 
       manifest: {
-        name: "Ajali HQ",
-        short_name: "Ajali",
-        description: "Incident reporting and management application",
+        name: "Ajali!",
+        short_name: "Ajali!",
+        description:
+          "Community emergency reporting for Kenya. See it. Report it. Respond to it.",
         theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
-        start_url: "/dashboard",
+        start_url: "/",
         scope: "/",
         icons: [
           {
-            src: "/pwa-192x192.png",
+            src: "/logo.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "/logo.png",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any",
           },
         ],
       },
 
       workbox: {
         navigateFallback: "/index.html",
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/(geocoding-api|api)\.open-meteo\.com\//,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "open-meteo-public",
+              expiration: {
+                maxEntries: 40,
+                maxAgeSeconds: 10 * 60,
+              },
+              networkTimeoutSeconds: 8,
+            },
+          },
+        ],
       },
     }),
   ],

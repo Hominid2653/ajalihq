@@ -58,6 +58,15 @@ npm run build
 npm run preview
 ```
 
+Frontend tests (Vitest + Testing Library):
+
+```bash
+cd frontend
+npm run test:run
+```
+
+Use `npm run test` for watch mode.
+
 ---
 
 ## Demo accounts

@@ -27,4 +27,4 @@ A complete React + TypeScript citizen and admin app for emergency reporting in K
 
 - Flask is not wired. That is Sprint 2.
 - Email/SMS are mock notification records only.
-- Frontend tests (Jest/RTL) are not in this package yet.
+- Tests cover services, RBAC, lifecycle, and the error boundary. Full page-level UI flows are not in the suite yet.

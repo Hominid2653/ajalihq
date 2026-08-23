@@ -1,6 +1,6 @@
 /**
- * Citizen incident reporting API facade.
- * Delegates to lib/incidents → services → mock api.ts (Flask-ready later).
+ * Citizen incident reporting API.
+ * Delegates to lib/incidents → services → mock api.ts .
  * Payload fields match admin CreateIncidentInput / Incident model.
  */
 import {

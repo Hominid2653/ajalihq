@@ -11,6 +11,7 @@ import {
   VerificationBadge,
 } from "@/components/admin/status-badge"
 import { IncidentMediaPanel } from "@/components/shared/incident-media-panel"
+import { SiteConditionsCard } from "@/components/shared/site-conditions"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -245,6 +246,7 @@ function AdminIncidentDetailPage() {
                       Coordinates were not supplied.
                     </p>
                   )}
+                  <SiteConditionsCard lat={incident.lat} lng={incident.lng} />
                 </CardContent>
               </Card>
 

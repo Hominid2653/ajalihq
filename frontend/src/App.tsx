@@ -18,8 +18,10 @@ import { AdminIncidentsPage } from "@/pages/admin/AdminIncidentsPage"
 import { AdminMapPage } from "@/pages/admin/AdminMapPage"
 import { AdminNotificationsPage } from "@/pages/admin/AdminNotificationsPage"
 import { ComingSoonPage } from "@/pages/public/ComingSoonPage"
+import { HomePage } from "@/pages/public/HomePage"
 import { LandingPage } from "@/pages/public/LandingPage"
 import { PrivacyPage, SupportPage, TermsPage } from "@/pages/public/LegalPages"
+import { PresentationPage } from "@/pages/public/PresentationPage"
 import { AccountPage } from "@/pages/user/AccountPage"
 import { DashboardPage } from "@/pages/user/DashboardPage"
 import { MapPage } from "@/pages/user/MapPage"
@@ -40,6 +42,7 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/home" element={<HomePage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signin/confirm" element={<SignInConfirmPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -49,6 +52,7 @@ function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/support" element={<SupportPage />} />
         <Route path="/coming-soon" element={<ComingSoonPage />} />
+        <Route path="/ppt" element={<PresentationPage />} />
 
         {/* Citizen */}
         <Route

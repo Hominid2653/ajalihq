@@ -34,6 +34,7 @@ import {
   urgencyLabel,
   type Incident,
 } from "@/lib/incidents"
+import { SiteConditionsCard } from "@/components/shared/site-conditions"
 import { mediaApi } from "@/services/media-api"
 import { useAuth } from "@/store/hooks"
 import type { IncidentMedia } from "@/types/incident"
@@ -176,9 +177,10 @@ function IncidentDetailPage() {
                 </p>
               ) : null}
 
-              <div>
+              <div className="space-y-2">
                 <p className="font-medium">Location</p>
                 <p className="text-muted-foreground">{incident.location}</p>
+                <SiteConditionsCard lat={incident.lat} lng={incident.lng} />
               </div>
 
               <div className="space-y-2">

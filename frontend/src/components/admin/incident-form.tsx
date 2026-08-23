@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from "react"
+import { useState, type FormEvent, type ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Map, MapMarker, MarkerContent } from "@/components/ui/map"
-import { LOCATION_SUGGESTIONS } from "@/lib/locations"
+import { SiteConditionsCard } from "@/components/shared/site-conditions"
+import { usePlaceSearch } from "@/hooks/use-place-search"
+import { GEOCODE_ATTRIBUTION } from "@/services/geocode-api"
 import {
   type IncidentSeverity,
   type IncidentType,
@@ -73,12 +75,12 @@ function IncidentForm({
     onChange({ ...values, [key]: value })
   const [showMapPick, setShowMapPick] = useState(false)
   const [locationQuery, setLocationQuery] = useState("")
-
-  const suggestions = useMemo(() => {
-    const q = locationQuery.trim().toLowerCase()
-    if (!q) return LOCATION_SUGGESTIONS.slice(0, 5)
-    return LOCATION_SUGGESTIONS.filter((item) => item.label.toLowerCase().includes(q)).slice(0, 8)
-  }, [locationQuery])
+  const {
+    results: suggestions,
+    loading: placeLoading,
+    error: placeError,
+    fromLiveApi,
+  } = usePlaceSearch(locationQuery)
 
   const mapCenter: [number, number] = [
     values.lng !== "" && !Number.isNaN(Number(values.lng)) ? Number(values.lng) : 36.8219,
@@ -183,9 +185,15 @@ function IncidentForm({
             value={locationQuery}
             onChange={(event) => setLocationQuery(event.target.value)}
           />
+          {placeLoading ? (
+            <p className="text-xs text-muted-foreground">Searching places…</p>
+          ) : null}
+          {placeError ? (
+            <p className="text-xs text-muted-foreground">{placeError}</p>
+          ) : null}
           <ul className="max-h-36 overflow-y-auto rounded-lg border bg-background">
             {suggestions.map((item) => (
-              <li key={item.label}>
+              <li key={`${item.label}-${item.lat}-${item.lng}`}>
                 <button
                   type="button"
                   className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
@@ -204,6 +212,11 @@ function IncidentForm({
               </li>
             ))}
           </ul>
+          <p className="text-[11px] text-muted-foreground">
+            {fromLiveApi
+              ? `${GEOCODE_ATTRIBUTION}. Only the typed place name is sent.`
+              : "Saved Kenyan places. Type more letters to search live."}
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="lat">Latitude (optional)</Label>
@@ -267,6 +280,12 @@ function IncidentForm({
             </p>
           </div>
         ) : null}
+        <div className="sm:col-span-2">
+          <SiteConditionsCard
+            lat={values.lat !== "" && !Number.isNaN(Number(values.lat)) ? Number(values.lat) : null}
+            lng={values.lng !== "" && !Number.isNaN(Number(values.lng)) ? Number(values.lng) : null}
+          />
+        </div>
       </fieldset>
 
       {includeNote ? (

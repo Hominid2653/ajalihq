@@ -1,32 +1,13 @@
-import type { CSSProperties } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"
 
-import { Button } from "@/components/ui/button";
-import { Logomark } from "@/components/brand/logomark";
+import { Button } from "@/components/ui/button"
+import { Logomark } from "@/components/brand/logomark"
+import { IncidentAwareness } from "@/components/public/incident-awareness"
 
 function LandingPage() {
   return (
-    <main
-      className="dark relative flex min-h-svh flex-col overflow-hidden bg-background text-foreground"
-      style={
-        {
-          "--primary": "oklch(0.72 0.19 145)",
-          "--primary-foreground": "oklch(0.18 0.04 145)",
-          "--color-primary": "oklch(0.72 0.19 145)",
-          "--color-primary-foreground": "oklch(0.18 0.04 145)",
-        } as CSSProperties
-      }
-    >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[#0a0612] bg-[url('/splash.png')] bg-cover bg-center bg-no-repeat"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,oklch(0.08_0.02_300/0.45)_100%)]"
-      />
-
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-16">
+    <main className="relative flex min-h-svh flex-col bg-ajali-surface text-foreground">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-10 px-6 py-16">
         <div className="flex w-full max-w-md flex-col items-center text-center">
           <Logomark className="mb-8" />
           <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
@@ -47,7 +28,7 @@ function LandingPage() {
             <Button
               size="lg"
               variant="outline"
-              className="h-12 w-full border-border/80 bg-background/40 text-base font-bold"
+              className="h-12 w-full border-border text-base font-bold"
               asChild
             >
               <Link to="/signin">Sign in</Link>
@@ -79,9 +60,11 @@ function LandingPage() {
             </p>
           </div>
         </div>
+
+        <IncidentAwareness />
       </div>
 
-      <footer className="relative z-10 flex flex-col items-center gap-3 px-6 pb-8 text-sm text-muted-foreground sm:flex-row sm:justify-center sm:gap-8">
+      <footer className="relative z-10 flex flex-col items-center gap-3 border-t border-border px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:justify-center sm:gap-8">
         <p>© 2026 Ajali!</p>
         <nav className="flex items-center gap-6">
           <Link className="transition-colors hover:text-foreground" to="/home">
@@ -105,7 +88,7 @@ function LandingPage() {
         </nav>
       </footer>
     </main>
-  );
+  )
 }
 
-export { LandingPage };
+export { LandingPage }

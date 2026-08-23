@@ -216,3 +216,13 @@ export async function withdrawMyIncident(
     actor
   )
 }
+
+/** Incidents currently being responded to — safe to show on the public map. */
+export async function fetchActiveIncidents(): Promise<Incident[]> {
+  return incidentApi.getActive()
+}
+
+export async function fetchActiveIncidentCount(): Promise<number> {
+  const active = await fetchActiveIncidents()
+  return active.length
+}

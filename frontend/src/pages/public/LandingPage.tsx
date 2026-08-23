@@ -1,8 +1,8 @@
-import type { CSSProperties } from "react"
-import { Link } from "react-router-dom"
+import type { CSSProperties } from "react";
+import { Link } from "react-router-dom";
 
-import { Button } from "@/components/ui/button"
-import { Logomark } from "@/components/brand/logomark"
+import { Button } from "@/components/ui/button";
+import { Logomark } from "@/components/brand/logomark";
 
 function LandingPage() {
   return (
@@ -69,6 +69,14 @@ function LandingPage() {
                 Sign up
               </Link>
             </p>
+            <p className="pt-1 text-sm text-muted-foreground">
+              <Link
+                className="font-bold text-primary underline-offset-4 hover:underline"
+                to="/home"
+              >
+                Home
+              </Link>
+            </p>
           </div>
         </div>
       </div>
@@ -76,16 +84,28 @@ function LandingPage() {
       <footer className="relative z-10 flex flex-col items-center gap-3 px-6 pb-8 text-sm text-muted-foreground sm:flex-row sm:justify-center sm:gap-8">
         <p>© 2026 Ajali!</p>
         <nav className="flex items-center gap-6">
+          <Link className="transition-colors hover:text-foreground" to="/home">
+            Home
+          </Link>
           <Link className="transition-colors hover:text-foreground" to="/terms">
             Terms
           </Link>
-          <Link className="transition-colors hover:text-foreground" to="/support">
+          <Link
+            className="transition-colors hover:text-foreground"
+            to="/privacy"
+          >
+            Privacy
+          </Link>
+          <Link
+            className="transition-colors hover:text-foreground"
+            to="/support"
+          >
             Help & support
           </Link>
         </nav>
       </footer>
     </main>
-  )
+  );
 }
 
-export { LandingPage }
+export { LandingPage };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { LocateFixed, MapPinned } from "lucide-react"
 
 import {
@@ -32,10 +32,10 @@ import {
   type IncidentType,
   type IncidentUrgency,
 } from "@/lib/incidents"
-import {
-  DEFAULT_MAP_CENTER,
-  filterLocationSuggestions,
-} from "@/lib/locations"
+import { DEFAULT_MAP_CENTER } from "@/lib/locations"
+import { usePlaceSearch } from "@/hooks/use-place-search"
+import { SiteConditionsCard } from "@/components/shared/site-conditions"
+import { GEOCODE_ATTRIBUTION } from "@/services/geocode-api"
 import { mediaApi, toDurableMediaItems } from "@/services/media-api"
 import type { IncidentMedia, PreferredContactMethod } from "@/types/incident"
 
@@ -159,10 +159,12 @@ function CitizenIncidentForm({
     }
   }, [incidentId])
 
-  const suggestions = useMemo(
-    () => filterLocationSuggestions(locationQuery),
-    [locationQuery]
-  )
+  const {
+    results: suggestions,
+    loading: placeLoading,
+    error: placeError,
+    fromLiveApi,
+  } = usePlaceSearch(locationQuery)
 
   const mapCenter: [number, number] = [
     values.lng ?? DEFAULT_MAP_CENTER[0],
@@ -402,9 +404,15 @@ function CitizenIncidentForm({
                 value={locationQuery}
                 onChange={(e) => setLocationQuery(e.target.value)}
               />
+              {placeLoading ? (
+                <p className="text-xs text-muted-foreground">Searching places…</p>
+              ) : null}
+              {placeError ? (
+                <p className="text-xs text-muted-foreground">{placeError}</p>
+              ) : null}
               <ul className="max-h-36 overflow-y-auto rounded-lg border bg-background">
                 {suggestions.map((item) => (
-                  <li key={item.label}>
+                  <li key={`${item.label}-${item.lat}-${item.lng}`}>
                     <button
                       type="button"
                       className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
@@ -419,6 +427,11 @@ function CitizenIncidentForm({
                   </li>
                 ))}
               </ul>
+              <p className="text-[11px] text-muted-foreground">
+                {fromLiveApi
+                  ? `${GEOCODE_ATTRIBUTION}. Only the typed place name is sent.`
+                  : "Saved Kenyan places. Type more letters to search live."}
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -452,6 +465,8 @@ function CitizenIncidentForm({
                 Pin: {values.lat.toFixed(5)}, {values.lng.toFixed(5)}
               </p>
             ) : null}
+
+            <SiteConditionsCard lat={values.lat} lng={values.lng} />
 
             <FieldError errors={errors.lat ? [{ message: errors.lat }] : []} />
 

@@ -1,14 +1,14 @@
-import type { ReactNode } from "react"
-import { Link } from "react-router-dom"
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
-import { brandStyle } from "@/lib/brand"
-import { cn } from "@/lib/utils"
+import { brandStyle } from "@/lib/brand";
+import { cn } from "@/lib/utils";
 
 type AuthShellProps = {
-  children: ReactNode
-  className?: string
-  wide?: boolean
-}
+  children: ReactNode;
+  className?: string;
+  wide?: boolean;
+};
 
 function AuthShell({ children, className, wide = false }: AuthShellProps) {
   return (
@@ -32,7 +32,7 @@ function AuthShell({ children, className, wide = false }: AuthShellProps) {
         className={cn(
           "relative z-10 w-full rounded-[var(--radius-2xl)] bg-[var(--ajali-surface)] p-8 text-foreground shadow-elevated ring-1 ring-border",
           wide ? "max-w-md" : "max-w-[440px]",
-          className
+          className,
         )}
       >
         {children}
@@ -49,7 +49,7 @@ function AuthShell({ children, className, wide = false }: AuthShellProps) {
         .
       </p>
     </main>
-  )
+  );
 }
 
-export { AuthShell }
+export { AuthShell };

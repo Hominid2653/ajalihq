@@ -622,7 +622,7 @@ function AdminIncidentReviewPage() {
                   </Card>
                 ) : null}
               </div>
-            </div>
+          </div>
           </>
         ) : null}
       </AdminPage>

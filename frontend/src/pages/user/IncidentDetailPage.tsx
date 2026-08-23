@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { ArrowLeft } from "lucide-react"
 
 import { IncidentMediaPanel } from "@/components/shared/incident-media-panel"
+import { SiteConditionsCard } from "@/components/shared/site-conditions"
 import { UserShell } from "@/components/user/user-shell"
 import {
   AlertDialog,
@@ -198,6 +199,7 @@ function IncidentDetailPage() {
                   <dd className="text-right">{when}</dd>
                 </div>
               </dl>
+              <SiteConditionsCard lat={incident.lat} lng={incident.lng} />
 
               <div className="flex flex-wrap gap-2 pt-2">
                 {eligible ? (

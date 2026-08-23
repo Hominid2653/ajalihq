@@ -230,6 +230,12 @@ function SignUpPage() {
           Log in
         </Link>
       </p>
+
+      <p className="mt-4 text-center text-sm text-neutral-700">
+        <Link className="font-bold text-primary hover:underline" to="/home">
+          Home
+        </Link>
+      </p>
     </AuthShell>
   )
 }

@@ -172,9 +172,23 @@ function AccountPage() {
     setEditing(false)
   }
 
+  const profileFields = [
+    {
+      label: "ID number",
+      value: session.idNumber ? maskIdNumber(session.idNumber) : "Not set",
+    },
+    { label: "Phone", value: session.phone || "-" },
+    { label: "Location", value: session.location || "-" },
+    {
+      label: "Preferred contact",
+      value: session.preferredContactMethod || "PHONE",
+    },
+  ] as const
+
   return (
-    <UserShell title="Account">
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-4 py-6 md:max-w-2xl md:px-8">
+    <UserShell title="Account" flush>
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <aside className="flex flex-col gap-5 px-4 py-6 md:w-[22rem] md:shrink-0 md:gap-6 md:overflow-y-auto md:border-r md:border-border md:px-6 md:py-6 lg:w-[26rem]">
         {!complete ? (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
             Finish your profile so responders can reach you during an emergency.
@@ -186,7 +200,7 @@ function AccountPage() {
           </div>
         ) : null}
 
-        <Card className="bg-[var(--ajali-cream)]">
+        <Card className="bg-[var(--ajali-cream)] md:bg-[var(--ajali-surface)] md:shadow-none">
           <CardHeader className="flex-row items-center gap-4 space-y-0">
             <button
               type="button"
@@ -248,7 +262,7 @@ function AccountPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="shrink-0 font-semibold"
+                className="shrink-0 font-semibold md:hidden"
                 onClick={() => setEditing(true)}
               >
                 <Pencil className="size-3.5" />
@@ -257,35 +271,19 @@ function AccountPage() {
             ) : null}
           </CardHeader>
           <Separator />
-          <CardContent className="space-y-1 py-3 text-sm">
+          <CardContent className="space-y-1 py-3 text-sm md:hidden">
             <p>
               <span className="text-muted-foreground">Role:</span>{" "}
               <span className="font-semibold">{session.role}</span>
             </p>
             {!editing ? (
               <>
-                <p>
-                  <span className="text-muted-foreground">ID number:</span>{" "}
-                  <span className="font-medium">
-                    {session.idNumber
-                      ? maskIdNumber(session.idNumber)
-                      : "Not set"}
-                  </span>
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Phone:</span>{" "}
-                  <span className="font-medium">{session.phone || "-"}</span>
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Location:</span>{" "}
-                  <span className="font-medium">{session.location || "-"}</span>
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Preferred contact:</span>{" "}
-                  <span className="font-medium">
-                    {session.preferredContactMethod || "PHONE"}
-                  </span>
-                </p>
+                {profileFields.map((field) => (
+                  <p key={field.label}>
+                    <span className="text-muted-foreground">{field.label}:</span>{" "}
+                    <span className="font-medium">{field.value}</span>
+                  </p>
+                ))}
                 {session.bio ? (
                   <p className="pt-1 text-muted-foreground">{session.bio}</p>
                 ) : null}
@@ -294,11 +292,59 @@ function AccountPage() {
           </CardContent>
         </Card>
 
-        {editing ? (
+        <div className="hidden md:block">
+          <p className="text-sm text-muted-foreground">Role</p>
+          <p className="mt-1 text-sm font-medium">{session.role}</p>
+          {!editing ? (
+            <Button
+              variant="outline"
+              className="mt-6 h-11 w-full font-semibold"
+              onClick={() => setEditing(true)}
+            >
+              Edit profile
+            </Button>
+          ) : null}
+        </div>
+
+        <Button
+          className="hidden h-11 font-semibold md:inline-flex"
+          variant="destructive"
+          onClick={() => navigate("/logout")}
+        >
+          Log out
+        </Button>
+        </aside>
+
+        <section className="flex flex-1 flex-col gap-5 px-4 pb-6 md:min-w-0 md:overflow-y-auto md:px-8 md:py-8">
+        {!editing ? (
+          <div className="hidden md:block">
+            <h2 className="text-xl font-semibold tracking-tight">Profile</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              These details help responders contact you about your reports.
+            </p>
+            <dl className="mt-8 grid gap-px border-t border-border sm:grid-cols-2">
+              {profileFields.map((field) => (
+                <div
+                  key={field.label}
+                  className="border-b border-border py-5 sm:odd:pr-8 sm:even:border-l sm:even:pl-8"
+                >
+                  <dt className="text-sm text-muted-foreground">{field.label}</dt>
+                  <dd className="mt-1 text-sm font-medium">{field.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {session.bio ? (
+              <div className="mt-8 max-w-2xl border-t border-border pt-6">
+                <p className="text-sm text-muted-foreground">About you</p>
+                <p className="mt-2 text-sm leading-6">{session.bio}</p>
+              </div>
+            ) : null}
+          </div>
+        ) : (
           <form
             onSubmit={onSave}
             className={cn(
-              "flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-[var(--shadow-card)] md:p-6"
+              "flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-[var(--shadow-card)] md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none"
             )}
           >
             <div>
@@ -428,15 +474,16 @@ function AccountPage() {
               ) : null}
             </div>
           </form>
-        ) : null}
+        )}
 
         <Button
-          className="h-11 font-semibold"
+          className="h-11 font-semibold md:hidden"
           variant="destructive"
           onClick={() => navigate("/logout")}
         >
           Log out
         </Button>
+        </section>
       </div>
     </UserShell>
   )

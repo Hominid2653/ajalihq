@@ -115,13 +115,14 @@ function AdminIncidentEditPage() {
   return (
     <AdminShell
       title="Edit incident"
+      flush
       breadcrumbs={[
         { label: "Admin", to: "/admin" },
         { label: "Incidents", to: "/admin/incidents" },
         { label: "Edit" },
       ]}
     >
-      <AdminPage>
+      <AdminPage wide className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
           <Skeleton className="h-[600px]" />
         ) : (

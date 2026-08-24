@@ -14,7 +14,7 @@ import {
   YAxis,
 } from "recharts"
 
-import { AdminPage, AdminShell } from "@/components/admin/admin-shell"
+import { AdminShell, adminDesktopRailClass } from "@/components/admin/admin-shell"
 import {
   ChartContainer,
   ChartLegend,
@@ -219,83 +219,90 @@ function AdminAnalyticsPage() {
     count: { label: "Count", color: "var(--ajali-primary)" },
   } satisfies ChartConfig
 
+  const kpiStrip = (compact: boolean) => (
+    <section className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-2 sm:grid-cols-4"}>
+      {loading || !stats
+        ? Array.from({ length: 8 }, (_, i) => (
+            <Skeleton key={i} className="h-[4.5rem] rounded-xl" />
+          ))
+        : kpi.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              className="rounded-xl border bg-card px-3 py-3 shadow-[var(--shadow-card)] transition-colors hover:bg-muted/40"
+            >
+              <p className="text-[11px] font-medium text-muted-foreground">{item.label}</p>
+              <p className="mt-1 text-2xl font-bold tracking-tight">{item.value}</p>
+            </Link>
+          ))}
+    </section>
+  )
+
+  const attentionList = () => (
+    <div>
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-12 rounded-lg" />
+          ))}
+        </div>
+      ) : attention.length === 0 ? (
+        <p className="py-4 text-sm text-muted-foreground">Nothing needs attention right now.</p>
+      ) : (
+        <ul className="divide-y divide-border border-t border-border">
+          {attention.map((row) => (
+            <li key={row.key}>
+              <Link
+                to={`/admin/incidents/${row.incidentId}/review`}
+                className="flex items-center gap-3 py-2.5 transition-colors hover:bg-muted/40"
+              >
+                <span
+                  className={cn(
+                    "size-2 shrink-0 rounded-full",
+                    row.tone === "critical" && "bg-[var(--urgency-critical)]",
+                    row.tone === "warn" && "bg-[var(--urgency-high)]",
+                    row.tone === "neutral" && "bg-muted-foreground"
+                  )}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {row.reference} · {row.title}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">{row.reason}</p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+
   return (
     <AdminShell
       title="Analytics"
+      flush
       breadcrumbs={[
         { label: "Admin", to: "/admin" },
         { label: "Analytics" },
       ]}
     >
-      <AdminPage wide className="flex flex-col gap-6">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="flex flex-1 flex-col gap-6 px-4 py-4 md:min-w-0 md:overflow-y-auto md:px-6 md:py-6">
         {error ? (
           <p className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">{error}</p>
         ) : null}
 
-        {/* KPI strip - from adminApi.getDashboardStats() */}
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
-          {loading || !stats
-            ? Array.from({ length: 8 }, (_, i) => (
-                <Skeleton key={i} className="h-[4.5rem] rounded-xl" />
-              ))
-            : kpi.map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.to}
-                  className="rounded-xl border bg-card px-3 py-3 shadow-[var(--shadow-card)] transition-colors hover:bg-muted/40"
-                >
-                  <p className="text-[11px] font-medium text-muted-foreground">{item.label}</p>
-                  <p className="mt-1 text-2xl font-bold tracking-tight">{item.value}</p>
-                </Link>
-              ))}
-        </section>
-
-        {/* Slim needs-attention list */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Needs attention</CardTitle>
-            <CardDescription>
+        <div className="flex flex-col gap-6 md:hidden">
+          {kpiStrip(false)}
+          <div>
+            <h2 className="mb-1 text-lg font-bold tracking-tight">Needs attention</h2>
+            <p className="mb-3 text-xs text-muted-foreground">
               Pending review, awaiting response, and missing locations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 4 }, (_, i) => (
-                  <Skeleton key={i} className="h-12 rounded-lg" />
-                ))}
-              </div>
-            ) : attention.length === 0 ? (
-              <p className="py-6 text-sm text-muted-foreground">Nothing needs attention right now.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {attention.map((row) => (
-                  <li key={row.key}>
-                    <Link
-                      to={`/admin/incidents/${row.incidentId}/review`}
-                      className="flex items-center gap-3 py-2.5 transition-colors hover:bg-muted/40"
-                    >
-                      <span
-                        className={cn(
-                          "size-2 shrink-0 rounded-full",
-                          row.tone === "critical" && "bg-[var(--urgency-critical)]",
-                          row.tone === "warn" && "bg-[var(--urgency-high)]",
-                          row.tone === "neutral" && "bg-muted-foreground"
-                        )}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {row.reference} · {row.title}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">{row.reason}</p>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+            </p>
+            {attentionList()}
+          </div>
+        </div>
 
         {/* Hero chart */}
         <Card className="overflow-hidden">
@@ -447,7 +454,26 @@ function AdminAnalyticsPage() {
             </CardContent>
           </Card>
         </div>
-      </AdminPage>
+        </div>
+
+        <aside className={adminDesktopRailClass}>
+          <div>
+            <p className="text-sm text-muted-foreground">Operations</p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">Analytics</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Live counts from the incident service. Open a KPI to jump into the matching inbox filter.
+            </p>
+          </div>
+          {kpiStrip(true)}
+          <div className="border-t border-border pt-5">
+            <h3 className="text-sm font-medium">Needs attention</h3>
+            <p className="mt-1 mb-3 text-xs text-muted-foreground">
+              Pending review, awaiting response, and missing locations
+            </p>
+            {attentionList()}
+          </div>
+        </aside>
+      </div>
     </AdminShell>
   )
 }

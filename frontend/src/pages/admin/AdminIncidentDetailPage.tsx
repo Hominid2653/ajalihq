@@ -137,6 +137,7 @@ function AdminIncidentDetailPage() {
   return (
     <AdminShell
       title={incident?.reference ?? "Incident details"}
+      flush
       breadcrumbs={[
         { label: "Admin", to: "/admin" },
         { label: "Incidents", to: "/admin/incidents" },
@@ -155,7 +156,7 @@ function AdminIncidentDetailPage() {
         ) : null
       }
     >
-      <AdminPage wide className="space-y-5">
+      <AdminPage wide className="min-h-0 flex-1 overflow-y-auto space-y-5">
         {loading ? (
           <div className="grid gap-4 md:grid-cols-2">
             {Array.from({ length: 6 }, (_, index) => (

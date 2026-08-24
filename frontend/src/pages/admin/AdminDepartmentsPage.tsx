@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { toast } from "sonner"
 
-import { AdminPage, AdminShell } from "@/components/admin/admin-shell"
+import { AdminShell, adminDesktopRailClass } from "@/components/admin/admin-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -127,24 +127,24 @@ function AdminDepartmentsPage() {
   }
 
   return (
-    <AdminShell title="Departments">
-      <AdminPage wide className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <AdminShell title="Departments" flush>
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="flex flex-1 flex-col gap-4 px-4 py-4 md:min-w-0 md:overflow-y-auto md:px-6 md:py-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center md:hidden">
           <Input
             placeholder="Search departments…"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="sm:max-w-xs"
           />
           <Select value={activeFilter} onValueChange={setActiveFilter}>
-            <SelectTrigger className="sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
-          <Button className="sm:ml-auto" onClick={openCreate}>Create department</Button>
+          <Button onClick={openCreate}>Create department</Button>
         </div>
 
         {loading ? <Skeleton className="h-64" /> : null}
@@ -185,7 +185,37 @@ function AdminDepartmentsPage() {
             </Card>
           ))}
         </div>
-      </AdminPage>
+        </div>
+
+        <aside className={adminDesktopRailClass}>
+          <div>
+            <p className="text-sm text-muted-foreground">Response units</p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">Departments</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Keep police, fire, hospital, and other units ready for handoff.
+            </p>
+          </div>
+          <Button onClick={openCreate}>Create department</Button>
+          <div className="flex flex-col gap-2 border-t border-border pt-5">
+            <Input
+              placeholder="Search departments…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Select value={activeFilter} onValueChange={setActiveFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="pt-1 text-xs text-muted-foreground">
+              {visible.length} of {departments.length} shown
+            </p>
+          </div>
+        </aside>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">

@@ -32,6 +32,8 @@ type UserShellProps = {
   children: ReactNode
   /** Full-bleed map views: no extra scroll padding, header floats above content. */
   bleed?: boolean
+  /** Fill the remaining viewport on desktop (no extra bottom padding). */
+  flush?: boolean
 }
 
 /* ─── sidebar expand/collapse persisted to localStorage ─── */
@@ -101,7 +103,7 @@ function SidebarLink({
   )
 }
 
-function UserShell({ title, end, children, bleed = false }: UserShellProps) {
+function UserShell({ title, end, children, bleed = false, flush = false }: UserShellProps) {
   const { expanded, toggle } = useSidebarExpanded()
   const { user: session } = useAuth()
 
@@ -270,7 +272,9 @@ function UserShell({ title, end, children, bleed = false }: UserShellProps) {
             "relative flex min-h-0 flex-1 flex-col bg-background",
             bleed
               ? "overflow-hidden pb-[var(--bottom-nav-height)] md:pb-0"
-              : "overflow-y-auto pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-8"
+              : flush
+                ? "overflow-y-auto pb-[calc(var(--bottom-nav-height)+1rem)] md:overflow-hidden md:pb-0"
+                : "overflow-y-auto pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-8"
           )}
         >
           {children}

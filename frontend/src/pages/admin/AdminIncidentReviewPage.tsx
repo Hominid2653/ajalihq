@@ -366,6 +366,7 @@ function AdminIncidentReviewPage() {
   return (
     <AdminShell
       title="Review incident"
+      flush
       breadcrumbs={[
         { label: "Admin", to: "/admin" },
         { label: "Incidents", to: "/admin/incidents" },
@@ -373,7 +374,7 @@ function AdminIncidentReviewPage() {
         { label: "Review" },
       ]}
     >
-      <AdminPage wide className="space-y-5">
+      <AdminPage wide className="min-h-0 flex-1 overflow-y-auto space-y-5">
         {loading ? <Skeleton className="h-80" /> : null}
         {error ? <p className="rounded-lg bg-destructive/10 p-4 text-destructive">{error}</p> : null}
 

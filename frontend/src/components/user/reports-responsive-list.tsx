@@ -45,9 +45,20 @@ function ReportsMobileList({ incidents }: { incidents: Incident[] }) {
 }
 
 /** Desktop / tablet: data table (aligned with admin inbox columns) */
-function ReportsDesktopTable({ incidents }: { incidents: Incident[] }) {
+function ReportsDesktopTable({
+  incidents,
+  className,
+}: {
+  incidents: Incident[]
+  className?: string
+}) {
   return (
-    <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
+    <div
+      className={cn(
+        "hidden overflow-hidden rounded-xl border bg-card md:block",
+        className
+      )}
+    >
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

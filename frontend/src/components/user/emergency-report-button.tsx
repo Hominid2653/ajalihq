@@ -13,7 +13,7 @@ function EmergencyReportButton({
   className,
   size = "lg",
 }: EmergencyReportButtonProps) {
-  const dim = size === "lg" ? "size-36 sm:size-40 md:size-44" : "size-28"
+  const dim = size === "lg" ? "size-36 sm:size-40" : "size-28"
 
   return (
     <div className={cn("flex flex-col items-center gap-4", className)}>

@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from "react"
 import { Link } from "react-router-dom"
-import { Menu } from "lucide-react"
 
 import { Logomark } from "@/components/brand/logomark"
 import { Button } from "@/components/ui/button"
@@ -32,6 +31,32 @@ const NAV_LINKS = [
   { label: "Privacy", to: "/privacy" },
 ] as const
 
+const FOOTER_COLUMNS = [
+  {
+    title: "Product",
+    links: [
+      { label: "About", to: "/home#about" },
+      { label: "How it works", to: "/home#how-it-works" },
+      { label: "Open app", to: "/" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Terms & conditions", to: "/terms" },
+      { label: "Privacy policy", to: "/privacy" },
+      { label: "Help & support", to: "/support" },
+    ],
+  },
+  {
+    title: "Account",
+    links: [
+      { label: "Sign in", to: "/signin" },
+      { label: "Sign up", to: "/signup" },
+    ],
+  },
+] as const
+
 type MarketingShellProps = {
   children: ReactNode
 }
@@ -45,14 +70,16 @@ function MarketingShell({ children }: MarketingShellProps) {
       style={brandStyle}
     >
       <header className="sticky top-0 z-40 border-b border-border bg-[var(--ajali-surface)]">
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:h-16 sm:px-6">
           <Link
             to="/home"
             className="flex items-center gap-2 text-foreground"
             aria-label="Ajali! home"
           >
-            <Logomark className="h-9 w-auto" />
-            <span className="text-lg font-bold tracking-tight">Ajali!</span>
+            <Logomark className="h-8 w-auto sm:h-9" />
+            <span className="text-base font-semibold tracking-tight sm:text-lg">
+              Ajali!
+            </span>
           </Link>
 
           <NavigationMenu className="hidden md:flex" viewport={false}>
@@ -64,7 +91,7 @@ function MarketingShell({ children }: MarketingShellProps) {
                       to={item.to}
                       className={cn(
                         navigationMenuTriggerStyle(),
-                        "bg-transparent"
+                        "bg-transparent font-normal"
                       )}
                     >
                       {item.label}
@@ -85,13 +112,8 @@ function MarketingShell({ children }: MarketingShellProps) {
 
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="md:hidden"
-                  aria-label="Open menu"
-                >
-                  <Menu className="size-5" />
+                <Button variant="outline" className="md:hidden" aria-label="Open menu">
+                  Menu
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="bg-[var(--ajali-surface)]">
@@ -146,36 +168,35 @@ function MarketingShell({ children }: MarketingShellProps) {
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-border bg-[var(--ajali-cream)]">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10 sm:px-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-2">
-              <p className="text-lg font-bold">Ajali!</p>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                See it. Report it. Respond to it. A simple way to report
-                emergencies and help your community get help faster.
-              </p>
-            </div>
-            <nav className="flex flex-col gap-2 text-sm sm:items-end">
-              <Button variant="link" className="h-auto p-0" asChild>
-                <Link to="/home#about">About</Link>
-              </Button>
-              <Button variant="link" className="h-auto p-0" asChild>
-                <Link to="/home#how-it-works">How it works</Link>
-              </Button>
-              <Button variant="link" className="h-auto p-0" asChild>
-                <Link to="/terms">Terms &amp; conditions</Link>
-              </Button>
-              <Button variant="link" className="h-auto p-0" asChild>
-                <Link to="/privacy">Privacy policy</Link>
-              </Button>
-              <Button variant="link" className="h-auto p-0" asChild>
-                <Link to="/support">Help &amp; support</Link>
-              </Button>
-            </nav>
+      <footer className="border-t border-border">
+        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,1fr))]">
+          <div className="space-y-2">
+            <p className="text-base font-semibold">Ajali!</p>
+            <p className="max-w-xs text-sm leading-6 text-muted-foreground">
+              See it. Report it. Respond to it. A simple way to report
+              emergencies and help your community get help faster.
+            </p>
           </div>
-          <Separator />
-          <p className="text-sm text-muted-foreground">
+          {FOOTER_COLUMNS.map((column) => (
+            <nav key={column.title} className="space-y-3" aria-label={column.title}>
+              <p className="text-sm font-medium">{column.title}</p>
+              <ul className="space-y-2">
+                {column.links.map((link) => (
+                  <li key={link.to}>
+                    <Link
+                      to={link.to}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+        </div>
+        <div className="border-t border-border">
+          <p className="mx-auto w-full max-w-6xl px-4 py-6 text-sm text-muted-foreground sm:px-6">
             © {new Date().getFullYear()} Ajali! All rights reserved.
           </p>
         </div>

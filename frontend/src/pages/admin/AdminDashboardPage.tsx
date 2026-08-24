@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { format } from "date-fns"
 import { ArrowRight, ChartNoAxesCombined, ChevronRight, Search, TriangleAlert, UserRound } from "lucide-react"
 
-import { AdminPage, AdminShell } from "@/components/admin/admin-shell"
+import { AdminShell, adminRailClass } from "@/components/admin/admin-shell"
 import { StatusBadge } from "@/components/admin/status-badge"
 import {
   Map,
@@ -104,10 +104,13 @@ function AdminDashboardPage() {
     return keys.size
   }, [incidents])
 
+  const liveTotal = incidents.filter((item) => !item.archived).length
+
   return (
     <AdminShell
       title="Dashboard"
       hideBreadcrumbs
+      flush
       end={
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="size-9" asChild>
@@ -123,55 +126,72 @@ function AdminDashboardPage() {
         </div>
       }
     >
-      <AdminPage wide className="flex flex-col gap-8 pb-4">
-        {error ? (
-          <p className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">{error}</p>
-        ) : null}
-
-        {/* ── Hero map ── */}
-        <section className="relative overflow-hidden rounded-2xl border bg-muted shadow-[var(--shadow-card)]">
-          <div className="relative h-[min(52vh,28rem)] w-full min-h-[240px] sm:h-[min(56vh,32rem)]">
-            {loading ? (
-              <Skeleton className="absolute inset-0 size-full rounded-none" />
-            ) : (
-              <Map
-                center={KENYA}
-                zoom={6}
-                theme="light"
-                className="absolute inset-0 size-full rounded-none"
-              >
-                <MapControls position="bottom-left" showZoom showLocate={false} showFullscreen={false} />
-                {mapped.map((incident) => (
-                  <IncidentMapMarker key={incident.id} incident={incident} />
-                ))}
-              </Map>
-            )}
-
-            {/* Floating affordance → full ops map (matches Figma arrow control) */}
-            <Button
-              size="icon"
-              className="absolute top-1/2 right-3 z-10 size-11 -translate-y-1/2 rounded-full bg-[var(--ajali-primary)] text-white shadow-lg hover:bg-[var(--ajali-primary-hover)]"
-              asChild
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <section className="relative h-[min(38vh,280px)] shrink-0 overflow-hidden bg-muted sm:h-[min(42vh,340px)] md:h-auto md:min-h-0 md:flex-1">
+          {loading ? (
+            <Skeleton className="absolute inset-0 size-full rounded-none" />
+          ) : (
+            <Map
+              center={KENYA}
+              zoom={6}
+              theme="light"
+              className="absolute inset-0 size-full rounded-none"
             >
-              <Link to="/admin/map" aria-label="Open operations map">
-                <ArrowRight className="size-5" />
-              </Link>
-            </Button>
+              <MapControls position="bottom-left" showZoom showLocate={false} showFullscreen={false} />
+              {mapped.map((incident) => (
+                <IncidentMapMarker key={incident.id} incident={incident} />
+              ))}
+            </Map>
+          )}
 
-            {!loading && mapped.length === 0 ? (
-              <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-background/40">
-                <p className="rounded-full bg-background px-4 py-2 text-sm text-muted-foreground shadow">
-                  No mapped incidents yet
-                </p>
-              </div>
-            ) : null}
-          </div>
+          <Link
+            to="/admin/map"
+            className="absolute right-4 bottom-4 z-10 flex size-11 items-center justify-center rounded-full bg-[var(--ajali-primary)] text-white shadow-elevated transition-colors hover:bg-[var(--ajali-primary-hover)] md:hidden"
+            aria-label="Open operations map"
+          >
+            <ArrowRight className="size-5" />
+          </Link>
+          <Link
+            to="/admin/map"
+            className="absolute right-4 bottom-4 z-10 hidden h-9 items-center border border-border bg-[var(--ajali-surface)] px-3 text-sm font-medium hover:bg-muted md:inline-flex"
+          >
+            Open map
+          </Link>
+
+          {!loading && mapped.length === 0 ? (
+            <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-background/40">
+              <p className="rounded-full bg-background px-4 py-2 text-sm text-muted-foreground shadow">
+                No mapped incidents yet
+              </p>
+            </div>
+          ) : null}
         </section>
 
-        {/* ── Latest reports | Newest users ── */}
-        <section className="grid gap-8 lg:grid-cols-2">
+        <section className={adminRailClass}>
+          {error ? (
+            <p className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">{error}</p>
+          ) : null}
+
+          <div className="hidden md:block">
+            <p className="text-sm text-muted-foreground">Operations</p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">Dashboard</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Latest reports and active reporters sit beside the Kenya overview.
+            </p>
+          </div>
+
           <div>
-            <h2 className="mb-4 text-lg font-bold tracking-tight">Latest reports</h2>
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h2 className="text-lg font-bold tracking-tight md:text-sm md:font-medium">
+                Latest reports
+              </h2>
+              <Link
+                to="/admin/incidents"
+                className="text-sm font-semibold text-[var(--ajali-primary)] hover:underline"
+              >
+                View all
+              </Link>
+            </div>
             {loading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }, (_, i) => (
@@ -179,9 +199,9 @@ function AdminDashboardPage() {
                 ))}
               </div>
             ) : latestReports.length === 0 ? (
-              <p className="py-8 text-sm text-muted-foreground">No reports available</p>
+              <p className="py-4 text-sm text-muted-foreground">No reports available</p>
             ) : (
-              <ul className="divide-y divide-border">
+              <ul className="divide-y divide-border border-t border-border">
                 {latestReports.map((report) => (
                   <li key={report.id}>
                     <Link
@@ -204,20 +224,25 @@ function AdminDashboardPage() {
                 ))}
               </ul>
             )}
-            <div className="mt-3 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {latestReports.length > 0
-                  ? `1 - ${latestReports.length} of ${incidents.filter((i) => !i.archived).length}`
-                  : null}
-              </span>
-              <Link to="/admin/incidents" className="font-semibold text-[var(--ajali-primary)] hover:underline">
-                View all
-              </Link>
-            </div>
+            {latestReports.length > 0 ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                1 - {latestReports.length} of {liveTotal}
+              </p>
+            ) : null}
           </div>
 
           <div>
-            <h2 className="mb-4 text-lg font-bold tracking-tight">Newest users</h2>
+            <div className="mb-1 flex items-baseline justify-between gap-3">
+              <h2 className="text-lg font-bold tracking-tight md:text-sm md:font-medium">
+                Newest users
+              </h2>
+              <Link
+                to="/admin/incidents?ops=active"
+                className="text-sm font-semibold text-[var(--ajali-primary)] hover:underline"
+              >
+                View all
+              </Link>
+            </div>
             <p className="mb-3 text-xs text-muted-foreground">
               Reporters on verified or in-progress incidents
             </p>
@@ -228,11 +253,11 @@ function AdminDashboardPage() {
                 ))}
               </div>
             ) : activeReporters.length === 0 ? (
-              <p className="py-8 text-sm text-muted-foreground">
+              <p className="py-4 text-sm text-muted-foreground">
                 No verified or in-progress reporters yet
               </p>
             ) : (
-              <ul className="divide-y divide-border">
+              <ul className="divide-y divide-border border-t border-border">
                 {activeReporters.map((user) => (
                   <li key={user.key}>
                     <Link
@@ -255,22 +280,14 @@ function AdminDashboardPage() {
                 ))}
               </ul>
             )}
-            <div className="mt-3 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {activeReporters.length > 0
-                  ? `1 - ${activeReporters.length} of ${activeReporterTotal}`
-                  : null}
-              </span>
-              <Link
-                to="/admin/incidents?ops=active"
-                className="font-semibold text-[var(--ajali-primary)] hover:underline"
-              >
-                View all
-              </Link>
-            </div>
+            {activeReporters.length > 0 ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                1 - {activeReporters.length} of {activeReporterTotal}
+              </p>
+            ) : null}
           </div>
         </section>
-      </AdminPage>
+      </div>
     </AdminShell>
   )
 }

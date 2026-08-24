@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { format } from "date-fns"
 
-import { AdminPage, AdminShell } from "@/components/admin/admin-shell"
+import { AdminShell, adminDesktopRailClass } from "@/components/admin/admin-shell"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -73,18 +73,19 @@ function AdminAuditLogPage() {
   }, [action, items, search])
 
   return (
-    <AdminShell title="Audit log">
-      <AdminPage wide className="space-y-4">
+    <AdminShell title="Audit log" flush>
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="flex flex-1 flex-col gap-4 px-4 py-4 md:min-w-0 md:overflow-y-auto md:px-6 md:py-6">
         {error ? (
           <p className="rounded-lg bg-destructive/10 p-4 text-destructive">{error}</p>
         ) : null}
 
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 md:hidden">
           <Input
             placeholder="Search actor, action, incident…"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="lg:col-span-2"
+            className="sm:col-span-2"
           />
           <Select value={action} onValueChange={setAction}>
             <SelectTrigger>
@@ -119,7 +120,7 @@ function AdminAuditLogPage() {
 
         {!loading && filtered.length > 0 ? (
           <>
-            <div className="hidden overflow-x-auto rounded-xl border lg:block">
+            <div className="hidden overflow-x-auto rounded-xl border md:block md:rounded-none md:border-x-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -161,7 +162,7 @@ function AdminAuditLogPage() {
               </Table>
             </div>
 
-            <div className="grid gap-3 lg:hidden">
+            <div className="grid gap-3 md:hidden">
               {filtered.map((item) => (
                 <Card key={item.id} className="bg-[var(--ajali-cream)]">
                   <CardContent className="space-y-2 pt-5 text-sm">
@@ -192,7 +193,41 @@ function AdminAuditLogPage() {
             </div>
           </>
         ) : null}
-      </AdminPage>
+        </div>
+
+        <aside className={adminDesktopRailClass}>
+          <div>
+            <p className="text-sm text-muted-foreground">Accountability</p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">Audit log</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Every administrative action recorded through the service layer.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 border-t border-border pt-5">
+            <Input
+              placeholder="Search actor, action, incident…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Select value={action} onValueChange={setAction}>
+              <SelectTrigger>
+                <SelectValue placeholder="Action" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All actions</SelectItem>
+                {ACTIONS.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {value.replaceAll("_", " ")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="pt-1 text-xs text-muted-foreground">
+              {filtered.length} of {items.length} shown
+            </p>
+          </div>
+        </aside>
+      </div>
     </AdminShell>
   )
 }

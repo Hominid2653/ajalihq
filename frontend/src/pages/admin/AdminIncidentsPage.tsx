@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { format, formatDistanceToNow } from "date-fns"
 
-import { AdminPage, AdminShell } from "@/components/admin/admin-shell"
+import { AdminShell, adminDesktopRailClass } from "@/components/admin/admin-shell"
 import { QuickCreateIncidentButton } from "@/components/admin/quick-create-incident"
 import {
   SeverityBadge,
@@ -155,6 +155,7 @@ function AdminIncidentsPage() {
 
   const pages = Math.max(1, Math.ceil(incidents.length / pageSize))
   const visible = incidents.slice((page - 1) * pageSize, page * pageSize)
+  const pendingCount = incidents.filter((item) => item.status === "PENDING").length
 
   function clearFilters() {
     setSearch("")
@@ -170,112 +171,118 @@ function AdminIncidentsPage() {
     setPage(1)
   }
 
+  const filterFields = () => (
+    <>
+      <Input
+        placeholder="Search…"
+        value={search}
+        onChange={(event) => {
+          setSearch(event.target.value)
+          setPage(1)
+        }}
+      />
+      <Select value={status} onValueChange={(value) => { setStatus(value); setPage(1) }}>
+        <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All statuses</SelectItem>
+          <SelectItem value="active">Active ops (verified + in progress)</SelectItem>
+          {statuses.map((value) => (
+            <SelectItem key={value} value={value}>{value.replace("_", " ")}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={urgency} onValueChange={(value) => { setUrgency(value); setPage(1) }}>
+        <SelectTrigger><SelectValue placeholder="Urgency" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All urgencies</SelectItem>
+          {urgencies.map((value) => (
+            <SelectItem key={value} value={value}>{value}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={severity} onValueChange={(value) => { setSeverity(value); setPage(1) }}>
+        <SelectTrigger><SelectValue placeholder="Severity" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All severities</SelectItem>
+          {severities.map((value) => (
+            <SelectItem key={value} value={value}>{value}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={type} onValueChange={(value) => { setType(value); setPage(1) }}>
+        <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All types</SelectItem>
+          {types.map((value) => (
+            <SelectItem key={value} value={value}>{typeLabel(value)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={department} onValueChange={(value) => { setDepartment(value); setPage(1) }}>
+        <SelectTrigger><SelectValue placeholder="Department" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All departments</SelectItem>
+          {departments.map((value) => (
+            <SelectItem key={value.id} value={value.id}>{value.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={verification} onValueChange={(value) => { setVerification(value); setPage(1) }}>
+        <SelectTrigger><SelectValue placeholder="Verification" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All verification</SelectItem>
+          <SelectItem value="PENDING">Not verified</SelectItem>
+          <SelectItem value="VERIFIED">Verified</SelectItem>
+          <SelectItem value="FAILED">Failed</SelectItem>
+        </SelectContent>
+      </Select>
+      <Input
+        placeholder="Location filter…"
+        value={location}
+        onChange={(event) => {
+          setLocation(event.target.value)
+          setPage(1)
+        }}
+      />
+      <Input
+        type="date"
+        value={dateFrom}
+        onChange={(event) => {
+          setDateFrom(event.target.value)
+          setPage(1)
+        }}
+        aria-label="Date from"
+      />
+      <Input
+        type="date"
+        value={dateTo}
+        onChange={(event) => {
+          setDateTo(event.target.value)
+          setPage(1)
+        }}
+        aria-label="Date to"
+      />
+    </>
+  )
+
   return (
     <AdminShell
       title="Incident inbox"
+      flush
       end={<QuickCreateIncidentButton />}
     >
-      <AdminPage wide className="space-y-4">
-        {error ? <p className="rounded-lg bg-destructive/10 p-4 text-destructive">{error}</p> : null}
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          <Input
-            placeholder="Search…"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value)
-              setPage(1)
-            }}
-            className="xl:col-span-2"
-          />
-          <Select value={status} onValueChange={(value) => { setStatus(value); setPage(1) }}>
-            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="active">Active ops (verified + in progress)</SelectItem>
-              {statuses.map((value) => (
-                <SelectItem key={value} value={value}>{value.replace("_", " ")}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={urgency} onValueChange={(value) => { setUrgency(value); setPage(1) }}>
-            <SelectTrigger><SelectValue placeholder="Urgency" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All urgencies</SelectItem>
-              {urgencies.map((value) => (
-                <SelectItem key={value} value={value}>{value}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={severity} onValueChange={(value) => { setSeverity(value); setPage(1) }}>
-            <SelectTrigger><SelectValue placeholder="Severity" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All severities</SelectItem>
-              {severities.map((value) => (
-                <SelectItem key={value} value={value}>{value}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={type} onValueChange={(value) => { setType(value); setPage(1) }}>
-            <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              {types.map((value) => (
-                <SelectItem key={value} value={value}>{typeLabel(value)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={department} onValueChange={(value) => { setDepartment(value); setPage(1) }}>
-            <SelectTrigger><SelectValue placeholder="Department" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All departments</SelectItem>
-              {departments.map((value) => (
-                <SelectItem key={value.id} value={value.id}>{value.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={verification} onValueChange={(value) => { setVerification(value); setPage(1) }}>
-            <SelectTrigger><SelectValue placeholder="Verification" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All verification</SelectItem>
-              <SelectItem value="PENDING">Not verified</SelectItem>
-              <SelectItem value="VERIFIED">Verified</SelectItem>
-              <SelectItem value="FAILED">Failed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Input
-            placeholder="Location filter…"
-            value={location}
-            onChange={(event) => {
-              setLocation(event.target.value)
-              setPage(1)
-            }}
-          />
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => {
-              setDateFrom(event.target.value)
-              setPage(1)
-            }}
-            aria-label="Date from"
-          />
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(event) => {
-              setDateTo(event.target.value)
-              setPage(1)
-            }}
-            aria-label="Date to"
-          />
-          <div className="flex justify-end">
-            <Button variant="ghost" size="sm" onClick={clearFilters}>Clear filters</Button>
-          </div>
-        </div>
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="flex flex-1 flex-col gap-4 px-4 py-4 md:min-w-0 md:overflow-y-auto md:px-6 md:py-6">
+          {error ? <p className="rounded-lg bg-destructive/10 p-4 text-destructive">{error}</p> : null}
 
-        {loading ? <Skeleton className="h-64" /> : null}
+          <div className="grid gap-2 sm:grid-cols-2 md:hidden">
+            {filterFields()}
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="justify-self-start">
+              Clear filters
+            </Button>
+          </div>
+
+          {loading ? <Skeleton className="h-64" /> : null}
         {!loading && incidents.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
@@ -285,7 +292,7 @@ function AdminIncidentsPage() {
         ) : null}
 
         {!loading && visible.length > 0 ? (
-          <div className="hidden overflow-x-auto rounded-xl border bg-background lg:block">
+          <div className="hidden overflow-x-auto rounded-xl border bg-background md:block md:rounded-none md:border-x-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -333,7 +340,7 @@ function AdminIncidentsPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-3 lg:hidden">
+        <div className="grid gap-3 md:hidden">
           {!loading &&
             visible.map((incident) => (
               <Card key={incident.id} className="bg-[var(--ajali-cream)]">
@@ -373,7 +380,39 @@ function AdminIncidentsPage() {
             </Button>
           </div>
         ) : null}
-      </AdminPage>
+        </div>
+
+        <aside className={adminDesktopRailClass}>
+          <div>
+            <p className="text-sm text-muted-foreground">Inbox</p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">Incidents</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Filter the queue, then open a report to review, verify, or start a response.
+            </p>
+          </div>
+
+          <div className="border-t border-border pt-5">
+            <p className="text-sm font-medium">Matching reports</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted-foreground">Total</dt>
+                <dd className="font-semibold tabular-nums">{loading ? "-" : incidents.length}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted-foreground">Pending review</dt>
+                <dd className="font-semibold tabular-nums">{loading ? "-" : pendingCount}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="flex flex-col gap-2 border-t border-border pt-5">
+            {filterFields()}
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="mt-1 self-start">
+              Clear filters
+            </Button>
+          </div>
+        </aside>
+      </div>
     </AdminShell>
   )
 }

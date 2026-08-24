@@ -72,6 +72,8 @@ type AdminShellProps = {
   end?: ReactNode
   children: ReactNode
   bleed?: boolean
+  /** Fill the remaining viewport on desktop (no extra bottom padding). */
+  flush?: boolean
   /** Hide the breadcrumb row (e.g. Figma dashboard home) */
   hideBreadcrumbs?: boolean
 }
@@ -165,6 +167,7 @@ function AdminShell({
   end,
   children,
   bleed = false,
+  flush = false,
   hideBreadcrumbs = false,
 }: AdminShellProps) {
   const { expanded, toggle } = useSidebarExpanded()
@@ -376,7 +379,9 @@ function AdminShell({
             "relative flex min-h-0 flex-1 flex-col bg-background",
             bleed
               ? "overflow-hidden pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px))] md:pb-0"
-              : "overflow-y-auto pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px)+1rem)] md:pb-8"
+              : flush
+                ? "overflow-y-auto pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px)+1rem)] md:overflow-hidden md:pb-0"
+                : "overflow-y-auto pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px)+1rem)] md:pb-8"
           )}
         >
           {children}
@@ -485,7 +490,7 @@ function AdminShell({
   )
 }
 
-/** Responsive page width: phone → laptop → large monitor */
+/** Responsive page padding. `wide` fills the admin canvas instead of a centered column. */
 export function AdminPage({
   children,
   className,
@@ -493,16 +498,14 @@ export function AdminPage({
 }: {
   children: ReactNode
   className?: string
-  /** Wider canvas for tables / dashboards on large monitors */
+  /** Fill the work area on desktop instead of a centered max-width column */
   wide?: boolean
 }) {
   return (
     <div
       className={cn(
-        "mx-auto w-full px-3 py-4 sm:px-4 sm:py-6 md:px-6 lg:px-8 xl:px-10 2xl:px-12",
-        wide
-          ? "max-w-7xl xl:max-w-[90rem] 2xl:max-w-[100rem]"
-          : "max-w-3xl md:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl",
+        "w-full px-3 py-4 sm:px-4 sm:py-6 md:px-6 lg:px-8 xl:px-10",
+        wide ? "" : "mx-auto max-w-3xl md:max-w-4xl xl:max-w-5xl",
         className
       )}
     >
@@ -510,5 +513,13 @@ export function AdminPage({
     </div>
   )
 }
+
+/** Right rail that stacks below the main pane on mobile */
+export const adminRailClass =
+  "flex w-full flex-col gap-6 px-4 py-6 md:w-[22rem] md:shrink-0 md:overflow-y-auto md:border-l md:border-border md:px-6 lg:w-[26rem]"
+
+/** Right rail shown only from the md breakpoint (filters, KPIs, page chrome) */
+export const adminDesktopRailClass =
+  "hidden w-[22rem] shrink-0 flex-col gap-6 overflow-y-auto border-l border-border px-6 py-6 md:flex lg:w-[26rem]"
 
 export { AdminShell }

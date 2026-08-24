@@ -108,10 +108,13 @@ The frontend uses Vitest and Testing Library. Tests live next to the code they c
 From `frontend/`:
 
 ```bash
-npm run test        # watch mode
-npm run test:run    # single CI-style run
+npm run test           # watch mode
+npm run test:run       # single CI-style run
+npm run test:ui        # Vitest UI in the browser
 npm run test:coverage
 ```
+
+`test:ui` opens the Vitest dashboard (usually `http://localhost:51204/__vitest__/`). Use it to rerun files, inspect failures, and watch tests live.
 
 The suite covers public HTTP allow-list rules, Open-Meteo query sanitization, incident lifecycle transitions, RBAC, Kenyan place fallbacks, ID validation, and the app error boundary.
 

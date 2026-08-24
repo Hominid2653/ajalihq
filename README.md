@@ -65,7 +65,7 @@ cd frontend
 npm run test:run
 ```
 
-Use `npm run test` for watch mode.
+Use `npm run test` for watch mode, or `npm run test:ui` for the browser dashboard.
 
 ---
 

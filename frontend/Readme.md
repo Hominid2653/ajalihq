@@ -39,6 +39,7 @@ PENDING → CLOSED
 - Redux Toolkit + React Router
 - MapLibre GL
 - Open-Meteo (live geocoding and weather)
+- Vitest + Testing Library
 - PWA (installable)
 
 ---
@@ -97,6 +98,22 @@ npm run preview
 `preview` serves that production bundle locally.
 
 Vite bakes `VITE_*` values from `.env` into the build. Restart `dev` or rebuild after changing `.env`.
+
+---
+
+## Tests
+
+The frontend uses Vitest and Testing Library. Tests live next to the code they cover (`src/**/*.test.ts` / `.tsx`).
+
+From `frontend/`:
+
+```bash
+npm run test        # watch mode
+npm run test:run    # single CI-style run
+npm run test:coverage
+```
+
+The suite covers public HTTP allow-list rules, Open-Meteo query sanitization, incident lifecycle transitions, RBAC, Kenyan place fallbacks, ID validation, and the app error boundary.
 
 ---
 

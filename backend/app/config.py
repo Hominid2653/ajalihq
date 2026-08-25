@@ -57,8 +57,11 @@ class Config:
         "info": {
             "description": (
                 "REST API for Ajali! emergency incident reporting. "
+                "All application routes are versioned under `/api/v1`. "
                 "Citizens report incidents; admins review, verify, and coordinate response. "
-                "Only IN_PROGRESS incidents appear on the public active map."
+                "Only IN_PROGRESS incidents appear on the public active map. "
+                "Authenticate via `POST /api/v1/auth/login`, then click Authorize in Swagger "
+                "and paste the `accessToken` as a Bearer JWT."
             )
         },
         "servers": [
@@ -67,6 +70,19 @@ class Config:
                 "description": "Local development",
             }
         ],
+        "components": {
+            "securitySchemes": {
+                "BearerAuth": {
+                    "type": "http",
+                    "scheme": "bearer",
+                    "bearerFormat": "JWT",
+                    "description": (
+                        "JWT from POST /api/v1/auth/login (`accessToken`). "
+                        "Paste the raw token only — Swagger adds the Bearer prefix."
+                    ),
+                }
+            }
+        },
     }
 
 
@@ -77,7 +93,7 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-    JWT_SECRET_KEY = "test-jwt-secret"
+    JWT_SECRET_KEY = "test-jwt-secret-key-at-least-32-bytes"
 
 
 class ProductionConfig(Config):

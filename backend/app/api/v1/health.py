@@ -6,7 +6,7 @@ from app.schemas.health import HealthSchema
 blp = Blueprint(
     "Health",
     "health",
-    url_prefix="/api/health",
+    url_prefix="/api/v1/health",
     description="Service availability for load balancers and local development.",
 )
 

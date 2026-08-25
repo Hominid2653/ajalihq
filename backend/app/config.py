@@ -1,9 +1,24 @@
 import os
 from datetime import timedelta
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Always load backend/.env so DATABASE_URL is available outside `flask` CLI.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
 def _split_origins(raw: str) -> list[str]:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+def _normalize_database_url(url: str) -> str:
+    """Accept common Supabase / Heroku URI forms; force psycopg3 driver."""
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
+    if url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
+    return url
 
 
 class Config:
@@ -12,8 +27,14 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=12)
     JWT_TOKEN_LOCATION = ["headers"]
 
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///ajali.db")
+    # Default is local SQLite only as a last resort. Sprint 2+ uses Supabase Postgres.
+    SQLALCHEMY_DATABASE_URI = _normalize_database_url(
+        os.getenv("DATABASE_URL", "sqlite:///ajali.db")
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+    }
 
     CORS_ORIGINS = _split_origins(
         os.getenv(

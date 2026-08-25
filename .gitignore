@@ -1,5 +1,7 @@
-# Cursor
-.cursor/
+# Cursor (share project rules; ignore the rest of the .cursor directory)
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .cursorignore
 .cursorrules
 

@@ -11,20 +11,31 @@ Flask REST API for Ajali! emergency incident reporting. Interactive docs are gen
 
 ## Setup
 
+1. Create a [Supabase](https://supabase.com) project (PostgreSQL).
+2. Copy **Project Settings → Database → URI** into `backend/.env` as `DATABASE_URL`.
+   Prefer the scheme `postgresql+psycopg://…` (the app also rewrites `postgres://` / `postgresql://`).
+
 ```powershell
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
+# Edit .env — set DATABASE_URL to your Supabase connection string
 flask db upgrade
 ```
 
-After adding models under `app/models/`:
+After changing models under `app/models/`:
 
 ```powershell
 flask db migrate -m "Describe the change"
 flask db upgrade
+```
+
+Seed lookup codes (idempotent):
+
+```powershell
+python -m scripts.seed_lookups
 ```
 
 ## Run the development server

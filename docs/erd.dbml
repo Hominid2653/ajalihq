@@ -1,241 +1,473 @@
-// Ajali! — domain ERD (Sprint 1 frontend model ↔ Sprint 2 PostgreSQL)
+// Ajali! PostgreSQL ERD
+// Source of truth for Sprint 2. Mirrors frontend/src/types/{incident,auth}.ts
 // Import into https://dbdiagram.io
 
 Project ajali {
   database_type: "PostgreSQL"
-  Note: "Emergency incident operations. Frontend types live in frontend/src/types/incident.ts"
+  Note: '''
+    UUID PKs. Lookup tables (not PG ENUMs) so new types/statuses are INSERTs.
+    Current state lives on incidents; history/audit/notifications are append-only.
+    Status + history + audit + notification writes share one transaction.
+  '''
 }
 
-Enum role {
-  USER
-  ADMIN
+// ── Lookups (seed from frontend unions; add rows later without migrations) ──
+
+Table roles {
+  code varchar [pk, note: "USER | ADMIN"]
+  label varchar [not null]
+  sort_order int [not null, default: 0]
+  active boolean [not null, default: true]
 }
 
-Enum incident_status {
-  PENDING
-  VERIFIED
-  IN_PROGRESS
-  RESOLVED
-  CLOSED
+Table incident_types {
+  code varchar [pk, note: "accident | fire | medical | crime | disaster"]
+  label varchar [not null]
+  sort_order int [not null, default: 0]
+  active boolean [not null, default: true]
 }
 
-Enum incident_urgency {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
+Table incident_statuses {
+  code varchar [pk, note: "PENDING | VERIFIED | IN_PROGRESS | RESOLVED | CLOSED"]
+  label varchar [not null]
+  sort_order int [not null, default: 0]
+  active boolean [not null, default: true]
 }
 
-Enum incident_severity {
-  MINOR
-  MODERATE
-  MAJOR
-  CRITICAL
+Table incident_status_transitions {
+  from_code varchar [not null]
+  to_code varchar [not null]
+
+  Indexes {
+    (from_code, to_code) [pk]
+  }
+
+  Note: 'PENDING→VERIFIED|CLOSED; VERIFIED→IN_PROGRESS|CLOSED; IN_PROGRESS→RESOLVED; RESOLVED→IN_PROGRESS; CLOSED→PENDING'
 }
 
-Enum incident_type {
-  accident
-  fire
-  medical
-  crime
-  disaster
+Table incident_urgencies {
+  code varchar [pk, note: "LOW | MEDIUM | HIGH | CRITICAL"]
+  label varchar [not null]
+  rank int [not null, note: "0 = most urgent"]
+  active boolean [not null, default: true]
 }
 
-Enum preferred_contact_method {
-  PHONE
-  EMAIL
-  OTHER
+Table incident_severities {
+  code varchar [pk, note: "MINOR | MODERATE | MAJOR | CRITICAL"]
+  label varchar [not null]
+  rank int [not null]
+  active boolean [not null, default: true]
 }
 
-Enum verification_status {
-  PENDING
-  VERIFIED
-  FAILED
+Table contact_methods {
+  code varchar [pk, note: "PHONE | EMAIL | OTHER"]
+  label varchar [not null]
 }
 
-Enum verification_method {
-  PHONE
-  EMAIL
-  OTHER
+Table verification_statuses {
+  code varchar [pk, note: "PENDING | VERIFIED | FAILED"]
+  label varchar [not null]
 }
 
-Enum close_reason_code {
-  FALSE_REPORT
-  DUPLICATE
-  UNABLE_TO_VERIFY
-  INSUFFICIENT_INFORMATION
-  OTHER
+Table verification_methods {
+  code varchar [pk, note: "PHONE | EMAIL | OTHER"]
+  label varchar [not null]
 }
 
-Enum department_type {
-  POLICE
-  FIRE
-  HOSPITAL
-  AMBULANCE
-  DISASTER_RESPONSE
-  OTHER
+Table close_reason_codes {
+  code varchar [pk, note: "FALSE_REPORT | DUPLICATE | UNABLE_TO_VERIFY | INSUFFICIENT_INFORMATION | OTHER"]
+  label varchar [not null]
+  active boolean [not null, default: true]
 }
 
-Enum handoff_status {
-  PENDING
-  ACKNOWLEDGED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
+Table department_types {
+  code varchar [pk, note: "POLICE | FIRE | HOSPITAL | AMBULANCE | DISASTER_RESPONSE | OTHER"]
+  label varchar [not null]
+  sort_order int [not null, default: 0]
+  active boolean [not null, default: true]
 }
 
-Enum resolution_outcome {
-  RESOLVED
-  ASSISTANCE_PROVIDED
-  REFERRED
-  UNABLE_TO_ASSIST
-  OTHER
+Table handoff_statuses {
+  code varchar [pk, note: "PENDING | ACKNOWLEDGED | IN_PROGRESS | COMPLETED | CANCELLED"]
+  label varchar [not null]
+  sort_order int [not null, default: 0]
+  active boolean [not null, default: true]
 }
 
-Enum media_kind {
-  image
-  video
+Table resolution_outcomes {
+  code varchar [pk, note: "RESOLVED | ASSISTANCE_PROVIDED | REFERRED | UNABLE_TO_ASSIST | OTHER"]
+  label varchar [not null]
+  active boolean [not null, default: true]
 }
 
-Enum notification_channel {
-  IN_APP
-  EMAIL
-  SMS
+Table media_kinds {
+  code varchar [pk, note: "image | video"]
+  label varchar [not null]
 }
+
+Table notification_channels {
+  code varchar [pk, note: "IN_APP | EMAIL | SMS"]
+  label varchar [not null]
+}
+
+Table notification_event_types {
+  code varchar [pk]
+  label varchar [not null]
+  active boolean [not null, default: true]
+
+  Note: 'REPORT_RECEIVED, CRITICAL_REPORT_RECEIVED, REPORT_VERIFIED, REPORT_CLOSED, RESPONSE_STARTED, DEPARTMENT_ASSIGNED, INCIDENT_RESOLVED, INCIDENT_ARCHIVED, CITIZEN_STATUS_NOTIFY, CRITICAL_INCIDENT, STATUS_IN_PROGRESS'
+}
+
+Table audit_actions {
+  code varchar [pk]
+  label varchar [not null]
+  active boolean [not null, default: true]
+
+  Note: 'REPORT_CREATED, REPORT_UPDATED, REPORT_VERIFIED, REPORT_CLOSED, RESPONSE_STARTED, DEPARTMENT_ASSIGNED, DEPARTMENT_HANDOFF_UPDATED, DEPARTMENT_CREATED, DEPARTMENT_UPDATED, INCIDENT_RESOLVED, INCIDENT_REOPENED, INCIDENT_ARCHIVED, MEDIA_ADDED, MEDIA_REMOVED, NOTE_ADDED, CITIZEN_NOTIFIED, URGENCY_UPDATED, SEVERITY_UPDATED'
+}
+
+// ── Identity ──
 
 Table users {
-  id varchar [pk]
+  id uuid [pk]
   name varchar [not null]
-  email varchar [unique, not null]
-  role role [not null]
+  email varchar [not null]
+  password_hash varchar [note: "Nullable if a later auth provider is added"]
+  role_code varchar [not null]
   phone varchar
-  created_at timestamptz
+  avatar_url varchar
+  location varchar
+  bio text
+  preferred_contact_method varchar
+  profile_complete boolean [not null, default: false]
+  id_number varchar [note: "Kenyan national ID, 7–8 digits"]
+  id_verified boolean [not null, default: false]
+  metadata jsonb [note: "Forward-compatible extras"]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    email [unique]
+    id_number [unique]
+    role_code
+    (id_verified, created_at)
+  }
 }
 
+// ── Core report ──
+
 Table incidents {
-  id varchar [pk]
-  reference varchar [unique, not null]
+  id uuid [pk]
+  reference varchar [not null, note: "AJL-0001"]
   title varchar [not null]
   description text [not null]
-  type incident_type [not null]
-  urgency incident_urgency [not null]
-  severity incident_severity [not null]
-  status incident_status [not null]
+  type_code varchar [not null]
+  urgency_code varchar [not null]
+  severity_code varchar [not null]
+  status_code varchar [not null]
   location varchar [not null]
-  lat decimal
-  lng decimal
-  reporter_id varchar [ref: > users.id, not null]
-  reporter_name varchar
+  lat decimal(9,6)
+  lng decimal(9,6)
+  reporter_id uuid [not null, note: "frontend userId"]
+  reporter_name varchar [note: "Snapshot for walk-in / phone reports"]
   reporter_email varchar
   reporter_phone varchar
-  preferred_contact_method preferred_contact_method
-  verification_id varchar
-  close_reason_code close_reason_code
+  preferred_contact_method varchar
+  close_reason_code varchar
   resolution_summary text
   resolution_notes text
-  resolution_outcome resolution_outcome
-  resolved_by_id varchar [ref: > users.id]
-  resolved_by_name varchar
+  resolution_outcome_code varchar
+  resolved_by_id uuid
+  resolved_by_name varchar [note: "Name snapshot at resolve time"]
   resolved_at timestamptz
   archived boolean [not null, default: false]
   archive_reason text
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
+  metadata jsonb
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
 
-  Note: "created_by / reporter via reporter_id. Department links live in handoffs."
+  Indexes {
+    reference [unique]
+    reporter_id
+    status_code
+    urgency_code
+    severity_code
+    type_code
+    archived
+    created_at
+    (status_code, created_at) [name: "idx_incidents_status_created"]
+    (urgency_code, created_at) [name: "idx_incidents_urgency_created"]
+    (archived, status_code, created_at) [name: "idx_incidents_inbox"]
+    (lat, lng) [name: "idx_incidents_coords"]
+  }
+
+  Note: 'Do not store department names here. Assignments live in incident_department_handoffs. Latest verification is queried, not a circular FK.'
+}
+
+Table reporter_verifications {
+  id uuid [pk]
+  incident_id uuid [not null]
+  status_code varchar [not null]
+  method_code varchar
+  notes text
+  verified_by_id uuid
+  verified_by_name varchar
+  verified_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    incident_id
+    (incident_id, created_at) [name: "idx_verifications_incident_created"]
+    status_code
+  }
 }
 
 Table departments {
-  id varchar [pk]
+  id uuid [pk]
   name varchar [not null]
-  type department_type [not null]
+  type_code varchar [not null]
   description text
   phone varchar
   email varchar
   location varchar
   active boolean [not null, default: true]
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
-}
+  metadata jsonb
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
 
-Table reporter_verifications {
-  id varchar [pk]
-  incident_id varchar [ref: > incidents.id, not null]
-  status verification_status [not null]
-  method verification_method
-  notes text
-  verified_by_id varchar [ref: > users.id]
-  verified_by_name varchar
-  verified_at timestamptz
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
+  Indexes {
+    type_code
+    active
+    name
+  }
 }
 
 Table incident_department_handoffs {
-  id varchar [pk]
-  incident_id varchar [ref: > incidents.id, not null]
-  department_id varchar [ref: > departments.id, not null]
-  initiated_by_id varchar [ref: > users.id, not null]
+  id uuid [pk]
+  incident_id uuid [not null]
+  department_id uuid [not null]
+  initiated_by_id uuid [not null]
   initiated_by_name varchar [not null]
-  status handoff_status [not null]
+  status_code varchar [not null]
   notes text
-  handed_off_at timestamptz [not null]
+  handed_off_at timestamptz [not null, default: `now()`]
   acknowledged_at timestamptz
   completed_at timestamptz
-  updated_at timestamptz [not null]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (incident_id, department_id) [unique, name: "uq_handoff_incident_department"]
+    incident_id
+    department_id
+    status_code
+    initiated_by_id
+  }
 }
 
 Table incident_media {
-  id varchar [pk]
-  incident_id varchar [ref: > incidents.id, not null]
-  kind media_kind [not null]
+  id uuid [pk]
+  incident_id uuid [not null]
+  kind_code varchar [not null]
   url varchar [not null]
   name varchar [not null]
-  created_at timestamptz [not null]
+  storage_key varchar [note: "Object-storage key; url may be a signed/public locator"]
+  mime_type varchar
+  byte_size bigint
+  uploaded_by_id uuid
+  deleted_at timestamptz [note: "Soft delete; retain audit of MEDIA_REMOVED"]
+  created_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    incident_id
+    kind_code
+    uploaded_by_id
+    (incident_id, created_at) [name: "idx_media_incident_created"]
+  }
 }
 
 Table incident_notes {
-  id varchar [pk]
-  incident_id varchar [ref: > incidents.id, not null]
-  author_id varchar [ref: > users.id, not null]
+  id uuid [pk]
+  incident_id uuid [not null]
+  author_id uuid [not null]
   author_name varchar [not null]
   body text [not null]
-  created_at timestamptz [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    incident_id
+    author_id
+    (incident_id, created_at) [name: "idx_notes_incident_created"]
+  }
 }
 
 Table incident_status_history {
-  id varchar [pk]
-  incident_id varchar [ref: > incidents.id, not null]
-  from_status incident_status
-  to_status incident_status [not null]
-  actor_id varchar [ref: > users.id, not null]
+  id uuid [pk]
+  incident_id uuid [not null]
+  from_status_code varchar
+  to_status_code varchar [not null]
+  actor_id uuid [not null]
   actor_name varchar [not null]
   reason text
-  created_at timestamptz [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    incident_id
+    actor_id
+    to_status_code
+    (incident_id, created_at) [name: "idx_history_incident_created"]
+  }
+
+  Note: 'Append-only. Never UPDATE or DELETE rows.'
 }
 
 Table notifications {
-  id varchar [pk]
-  incident_id varchar [ref: > incidents.id]
-  type varchar [not null]
-  channel notification_channel [not null]
+  id uuid [pk]
+  recipient_id uuid [note: "Null = ops-wide / unscoped mock row"]
+  incident_id uuid
+  type_code varchar [not null]
+  channel_code varchar [not null]
   title varchar [not null]
   body text [not null]
   read boolean [not null, default: false]
-  created_at timestamptz [not null]
+  read_at timestamptz
+  metadata jsonb
+  created_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    recipient_id
+    incident_id
+    type_code
+    channel_code
+    (recipient_id, read, created_at) [name: "idx_notifications_inbox"]
+    created_at
+  }
 }
 
 Table audit_logs {
-  id varchar [pk]
-  incident_id varchar [ref: > incidents.id]
-  actor_id varchar [ref: > users.id, not null]
+  id uuid [pk]
+  incident_id uuid
+  incident_reference varchar [note: "Snapshot for UI when the join is skipped"]
+  entity_type varchar [not null, default: "incident", note: "incident | department | user"]
+  entity_id uuid
+  actor_id uuid [not null]
   actor_name varchar [not null]
-  action varchar [not null]
+  action_code varchar [not null]
   previous_value text
   new_value text
   reason text
-  metadata text
-  created_at timestamptz [not null]
+  metadata jsonb
+  created_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    incident_id
+    actor_id
+    action_code
+    entity_type
+    entity_id
+    (incident_id, created_at) [name: "idx_audit_incident_created"]
+    created_at
+  }
+
+  Note: 'Append-only. DEPARTMENT_* rows may omit incident_id.'
 }
 
-Ref: incidents.verification_id > reporter_verifications.id
+// ── Lookup FKs ──
+
+Ref: users.role_code > roles.code
+Ref: users.preferred_contact_method >? contact_methods.code
+
+Ref: incidents.type_code > incident_types.code
+Ref: incidents.urgency_code > incident_urgencies.code
+Ref: incidents.severity_code > incident_severities.code
+Ref: incidents.status_code > incident_statuses.code
+Ref: incidents.preferred_contact_method >? contact_methods.code
+Ref: incidents.close_reason_code >? close_reason_codes.code
+Ref: incidents.resolution_outcome_code >? resolution_outcomes.code
+
+Ref: incident_status_transitions.from_code > incident_statuses.code
+Ref: incident_status_transitions.to_code > incident_statuses.code
+
+Ref: reporter_verifications.status_code > verification_statuses.code
+Ref: reporter_verifications.method_code >? verification_methods.code
+
+Ref: departments.type_code > department_types.code
+
+Ref: incident_department_handoffs.status_code > handoff_statuses.code
+
+Ref: incident_media.kind_code > media_kinds.code
+
+Ref: incident_status_history.from_status_code >? incident_statuses.code
+Ref: incident_status_history.to_status_code > incident_statuses.code
+
+Ref: notifications.type_code > notification_event_types.code
+Ref: notifications.channel_code > notification_channels.code
+
+Ref: audit_logs.action_code > audit_actions.code
+
+// ── Entity FKs (restrict deletes; archive instead of destroying incidents) ──
+
+Ref: incidents.reporter_id > users.id [delete: restrict]
+Ref: incidents.resolved_by_id >? users.id [delete: restrict]
+
+Ref: reporter_verifications.incident_id > incidents.id [delete: restrict]
+Ref: reporter_verifications.verified_by_id >? users.id [delete: restrict]
+
+Ref: incident_department_handoffs.incident_id > incidents.id [delete: restrict]
+Ref: incident_department_handoffs.department_id > departments.id [delete: restrict]
+Ref: incident_department_handoffs.initiated_by_id > users.id [delete: restrict]
+
+Ref: incident_media.incident_id > incidents.id [delete: restrict]
+Ref: incident_media.uploaded_by_id >? users.id [delete: restrict]
+
+Ref: incident_notes.incident_id > incidents.id [delete: restrict]
+Ref: incident_notes.author_id > users.id [delete: restrict]
+
+Ref: incident_status_history.incident_id > incidents.id [delete: restrict]
+Ref: incident_status_history.actor_id > users.id [delete: restrict]
+
+Ref: notifications.recipient_id >? users.id [delete: restrict]
+Ref: notifications.incident_id >? incidents.id [delete: restrict]
+
+Ref: audit_logs.incident_id >? incidents.id [delete: restrict]
+Ref: audit_logs.actor_id > users.id [delete: restrict]
+
+TableGroup identity {
+  roles
+  contact_methods
+  users
+}
+
+TableGroup reports {
+  incidents
+  reporter_verifications
+  incident_media
+  incident_notes
+  incident_status_history
+}
+
+TableGroup operations {
+  departments
+  incident_department_handoffs
+  notifications
+  audit_logs
+}
+
+TableGroup lookups {
+  incident_types
+  incident_statuses
+  incident_status_transitions
+  incident_urgencies
+  incident_severities
+  verification_statuses
+  verification_methods
+  close_reason_codes
+  department_types
+  handoff_statuses
+  resolution_outcomes
+  media_kinds
+  notification_channels
+  notification_event_types
+  audit_actions
+}

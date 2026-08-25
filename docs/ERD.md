@@ -1,8 +1,15 @@
 # Ajali! Entity-Relationship Model
 
-This document mirrors the TypeScript domain model in `frontend/src/types/incident.ts` and the Sprint 1 mock store in `frontend/src/data/api.ts`.
+Canonical diagram code: [`docs/erd.dbml`](erd.dbml). Paste it into [dbdiagram.io](https://dbdiagram.io).
 
-Import `docs/erd.dbml` into [dbdiagram.io](https://dbdiagram.io) for a visual ERD.
+This schema is the Sprint 2 PostgreSQL target. It matches `frontend/src/types/incident.ts`, `frontend/src/types/auth.ts`, and the mock store in `frontend/src/data/api.ts`.
+
+## Design rules
+
+- **Atomicity:** A lifecycle change updates `incidents` and inserts `incident_status_history`, `audit_logs`, and `notifications` in **one database transaction**. Do not persist those side effects in the UI.
+- **Loose coupling:** Incidents do not embed departments. Assignments live in `incident_department_handoffs`. Latest verification is the newest `reporter_verifications` row (no circular `verification_id` FK). Name columns on child rows are **write-time snapshots**, not live joins.
+- **Flexibility:** Domain values are **lookup tables**, not PostgreSQL ENUMs. Adding a type, channel, or audit action is an INSERT. `metadata jsonb` holds extras without a migration. `incident_status_transitions` is the allowed-lifecycle table (`canTransition` in the frontend).
+- **Integrity:** UUID primary keys. Foreign keys use `ON DELETE RESTRICT`. Archive incidents instead of deleting them. History, audit, and notifications are append-only.
 
 ## Operational workflow
 
@@ -17,72 +24,65 @@ VALID?
    ┌────┴────┐
    NO        YES
    ↓          ↓
- CLOSED    VERIFIED  (ReporterVerification record)
+ CLOSED    VERIFIED  (reporter_verifications row)
               ↓
-        START RESPONSE (select Department(s))
+        START RESPONSE (handoff rows)
               ↓
-          IN_PROGRESS + DepartmentHandoff(s)
+          IN_PROGRESS
               ↓
-           RESOLVED (resolution summary/outcome)
+           RESOLVED
 ```
 
-## Entities
+## Frontend field map
 
-### users
-Citizen reporters and admins. `role` is `USER` | `ADMIN`. Incidents reference `reporter_id` (`userId` in the frontend model).
+| Frontend | Database |
+| --- | --- |
+| `AuthUser.id` / `Incident.userId` | `users.id` / `incidents.reporter_id` |
+| `AuthUser.verified` | `users.id_verified` |
+| `AuthUser.idNumber` | `users.id_number` |
+| `Incident.type` / `status` / `urgency` / `severity` | `*_code` FK to lookup tables |
+| `Incident.verificationId` | derived: latest `reporter_verifications.id` for that incident |
+| `IncidentListItem.verificationStatus` | join / subquery on latest verification |
+| `AuditLog.incidentReference` | `audit_logs.incident_reference` snapshot |
+| `AppNotification` (ops-wide in Sprint 1) | `notifications.recipient_id` nullable |
 
-### incidents
-Core emergency report. Holds **urgency** (admin attention speed) and **severity** (incident seriousness) as separate fields.
+## Tables
 
-- Status lifecycle: `PENDING → VERIFIED → IN_PROGRESS → RESOLVED` (or `CLOSED` from pending/verified).
-- Does **not** embed department names; departments are linked through handoffs.
-- Optional denormalized reporter contact fields support phone/walk-in reports without forcing a full user account.
+**users** — Citizens and admins. Role, contact, avatar, bio, national ID verification, password hash for Flask.
 
-### reporter_verifications
-Structured verification outcomes (`PENDING` | `VERIFIED` | `FAILED`) with method (`PHONE` | `EMAIL` | `OTHER`), actor, timestamp, and notes. Incident may point at the latest verification via `verification_id`.
+**incidents** — One report. Current status/urgency/severity as codes. Reporter snapshots for walk-in/phone. Archive flag instead of delete.
 
-### departments
-First-class response organizations (Police, Fire, Ambulance, etc.) with contact details and active flag.
+**reporter_verifications** — One row per verification attempt. Query latest by `created_at`.
 
-### incident_department_handoffs
-Many-to-many operational assignment between an incident and departments. Tracks handoff lifecycle (`PENDING` → `ACKNOWLEDGED` → `IN_PROGRESS` → `COMPLETED`).
+**departments** — Police, fire, hospital, ambulance, disaster response, other.
 
-### incident_media
-Shared evidence (images/videos) for citizen and admin uploads. Sprint 1 mocks storage URLs.
+**incident_department_handoffs** — Unique `(incident_id, department_id)`. Status walks PENDING → ACKNOWLEDGED → IN_PROGRESS → COMPLETED (or CANCELLED).
 
-### incident_notes
-Operational notes authored by admins (and later responders).
+**incident_media** — Images/videos. `storage_key` is for object storage later; `deleted_at` is soft delete.
 
-### incident_status_history
-Append-only status transitions with actor and reason.
+**incident_notes** — Operational notes; `updated_at` if a note is edited.
 
-### notifications
-Event records for `IN_APP` / `EMAIL` / `SMS`. Sprint 1 mocks SMS/EMAIL channels; Sprint 2 plugs providers without UI rewrites.
+**incident_status_history** — Append-only transitions with actor and reason.
 
-### audit_logs
-Immutable operational audit trail (`REPORT_CREATED`, `REPORT_VERIFIED`, `RESPONSE_STARTED`, `DEPARTMENT_ASSIGNED`, `INCIDENT_RESOLVED`, etc.).
+**notifications** — IN_APP / EMAIL / SMS events. Optional recipient for per-user inboxes.
 
-## Relationships (normalized)
+**audit_logs** — Append-only. `entity_type` + `entity_id` cover department actions that have no incident.
 
-| From | To | Cardinality | Notes |
-|------|----|-------------|-------|
-| incidents.reporter_id | users | N:1 | Reporter |
-| incidents.resolved_by_id | users | N:1 | Resolver |
-| reporter_verifications.incident_id | incidents | N:1 | History of attempts |
-| incidents.verification_id | reporter_verifications | N:1 | Latest verification |
-| incident_department_handoffs.incident_id | incidents | N:1 | |
-| incident_department_handoffs.department_id | departments | N:1 | |
-| incident_media / notes / status_history / notifications / audit_logs | incidents | N:1 | Supporting records |
+**Lookups** — Seed from the TypeScript unions. Mark `active = false` to retire a code without rewriting history.
 
-## Frontend ↔ Flask migration
+## Indexes
+
+Every FK is indexed. Inbox/map filters use `(archived, status_code, created_at)`, `(urgency_code, created_at)`, and `(lat, lng)`. Notification unread uses `(recipient_id, read, created_at)`. Unique: `users.email`, `users.id_number`, `incidents.reference`, handoff `(incident_id, department_id)`.
+
+## Flask migration
 
 ```
 UI / Redux / hooks
         ↓
-service facades (incidentApi, departmentApi, handoffApi, mediaApi, …)
+service facades (incidentApi, departmentApi, …)
         ↓
-Sprint 1: data/api.ts (mock)
-Sprint 2: Flask REST → PostgreSQL
+Sprint 1: data/api.ts
+Sprint 2: Flask REST → this schema
 ```
 
-Keep service method names and TypeScript contracts stable so Admin pages do not need a rewrite when the mock is replaced.
+Keep service method names and TypeScript contracts stable. SQLAlchemy models must follow `docs/erd.dbml`.

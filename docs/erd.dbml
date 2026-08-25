@@ -376,21 +376,21 @@ Table audit_logs {
 // ── Lookup FKs ──
 
 Ref: users.role_code > roles.code
-Ref: users.preferred_contact_method > contact_methods.code
+Ref: users.preferred_contact_method >? contact_methods.code
 
 Ref: incidents.type_code > incident_types.code
 Ref: incidents.urgency_code > incident_urgencies.code
 Ref: incidents.severity_code > incident_severities.code
 Ref: incidents.status_code > incident_statuses.code
-Ref: incidents.preferred_contact_method > contact_methods.code
-Ref: incidents.close_reason_code > close_reason_codes.code
-Ref: incidents.resolution_outcome_code > resolution_outcomes.code
+Ref: incidents.preferred_contact_method >? contact_methods.code
+Ref: incidents.close_reason_code >? close_reason_codes.code
+Ref: incidents.resolution_outcome_code >? resolution_outcomes.code
 
 Ref: incident_status_transitions.from_code > incident_statuses.code
 Ref: incident_status_transitions.to_code > incident_statuses.code
 
 Ref: reporter_verifications.status_code > verification_statuses.code
-Ref: reporter_verifications.method_code > verification_methods.code
+Ref: reporter_verifications.method_code >? verification_methods.code
 
 Ref: departments.type_code > department_types.code
 
@@ -398,7 +398,7 @@ Ref: incident_department_handoffs.status_code > handoff_statuses.code
 
 Ref: incident_media.kind_code > media_kinds.code
 
-Ref: incident_status_history.from_status_code > incident_statuses.code
+Ref: incident_status_history.from_status_code >? incident_statuses.code
 Ref: incident_status_history.to_status_code > incident_statuses.code
 
 Ref: notifications.type_code > notification_event_types.code
@@ -409,17 +409,17 @@ Ref: audit_logs.action_code > audit_actions.code
 // ── Entity FKs (restrict deletes; archive instead of destroying incidents) ──
 
 Ref: incidents.reporter_id > users.id [delete: restrict]
-Ref: incidents.resolved_by_id > users.id [delete: restrict]
+Ref: incidents.resolved_by_id >? users.id [delete: restrict]
 
 Ref: reporter_verifications.incident_id > incidents.id [delete: restrict]
-Ref: reporter_verifications.verified_by_id > users.id [delete: restrict]
+Ref: reporter_verifications.verified_by_id >? users.id [delete: restrict]
 
 Ref: incident_department_handoffs.incident_id > incidents.id [delete: restrict]
 Ref: incident_department_handoffs.department_id > departments.id [delete: restrict]
 Ref: incident_department_handoffs.initiated_by_id > users.id [delete: restrict]
 
 Ref: incident_media.incident_id > incidents.id [delete: restrict]
-Ref: incident_media.uploaded_by_id > users.id [delete: restrict]
+Ref: incident_media.uploaded_by_id >? users.id [delete: restrict]
 
 Ref: incident_notes.incident_id > incidents.id [delete: restrict]
 Ref: incident_notes.author_id > users.id [delete: restrict]
@@ -427,10 +427,10 @@ Ref: incident_notes.author_id > users.id [delete: restrict]
 Ref: incident_status_history.incident_id > incidents.id [delete: restrict]
 Ref: incident_status_history.actor_id > users.id [delete: restrict]
 
-Ref: notifications.recipient_id > users.id [delete: restrict]
-Ref: notifications.incident_id > incidents.id [delete: restrict]
+Ref: notifications.recipient_id >? users.id [delete: restrict]
+Ref: notifications.incident_id >? incidents.id [delete: restrict]
 
-Ref: audit_logs.incident_id > incidents.id [delete: restrict]
+Ref: audit_logs.incident_id >? incidents.id [delete: restrict]
 Ref: audit_logs.actor_id > users.id [delete: restrict]
 
 TableGroup identity {

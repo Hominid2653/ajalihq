@@ -1,6 +1,6 @@
 # Ajali! Entity-Relationship Model
 
-Canonical diagram code: [`docs/erd.dbml`](erd.dbml). Paste it into [dbdiagram.io](https://dbdiagram.io).
+Canonical diagram: [AjaliHQ on dbdiagram.io](https://dbdiagram.io/d/6a849ab36440800f52971cb8). Source: [`docs/erd.dbml`](erd.dbml). Sync with `dbdiagram push`.
 
 This schema is the Sprint 2 PostgreSQL target. It matches `frontend/src/types/incident.ts`, `frontend/src/types/auth.ts`, and the mock store in `frontend/src/data/api.ts`.
 

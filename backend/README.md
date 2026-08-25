@@ -47,6 +47,12 @@ Seed demo accounts (Amina USER / Brian ADMIN, password `password`):
 python -m scripts.seed_demo_users
 ```
 
+Seed departments + sample incidents (every status):
+
+```powershell
+python -m scripts.seed_demo_data
+```
+
 ## Authentication (get a JWT)
 
 See **[docs/api-auth.md](../docs/api-auth.md)** for full detail.

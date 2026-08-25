@@ -19,7 +19,8 @@ Replace the in-memory mock in `frontend/src/data/api.ts` with a **Flask REST API
 | --- | --- |
 | 2026-08-25 | Plan saved. Phase 0: psycopg + Supabase URL normalization. Phase 1 started: SQLAlchemy models + initial Alembic migration + lookup seed script. |
 | 2026-08-25 | Supabase connected. `flask db upgrade` applied `17e2b4e7a636`. Lookup seed complete. |
-| 2026-08-25 | Phase 2a auth: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` + JWT role claims. Demo users seeded. Next: Phase 3 read APIs / incident CRUD. |
+| 2026-08-25 | Phase 2a auth: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me` + JWT role claims. Demo users seeded. |
+| 2026-08-25 | Phase 3 reads: incidents list/get/active/community + nested resources; admin dashboard/audit; departments; notifications. Demo incident seed. Next: Phase 4 CRUD/archive. |
 
 ## Current baseline
 

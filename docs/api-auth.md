@@ -70,6 +70,25 @@ Register always creates `role: USER`. Admins are created via seed (or a future a
 
 Tokens expire after **12 hours** (`JWT_ACCESS_TOKEN_EXPIRES`). Set a long random `JWT_SECRET_KEY` (≥ 32 characters) in `backend/.env`.
 
+## Read endpoints (Phase 3)
+
+| Method | Path | Auth |
+| --- | --- | --- |
+| `GET` | `/api/v1/incidents/active` | Public (`IN_PROGRESS`) |
+| `GET` | `/api/v1/incidents/community` | Public |
+| `GET` | `/api/v1/incidents` | Bearer (USER: own; ADMIN: all) |
+| `GET` | `/api/v1/incidents/{id}` | Bearer |
+| `GET` | `/api/v1/incidents/{id}/notes` | Bearer |
+| `GET` | `/api/v1/incidents/{id}/media` | Bearer |
+| `GET` | `/api/v1/incidents/{id}/history` | Bearer |
+| `GET` | `/api/v1/incidents/{id}/verifications` | Bearer |
+| `GET` | `/api/v1/incidents/{id}/handoffs` | Bearer |
+| `GET` | `/api/v1/admin/dashboard` | ADMIN |
+| `GET` | `/api/v1/admin/audit-logs` | ADMIN |
+| `GET` | `/api/v1/admin/handoffs` | ADMIN |
+| `GET` | `/api/v1/departments` | Bearer |
+| `GET` | `/api/v1/notifications` | Bearer |
+
 ## API versioning
 
 | Prefix | Use |

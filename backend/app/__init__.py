@@ -32,7 +32,7 @@ def create_app(config_name: str | None = None) -> Flask:
                 "docs": "/docs",
                 "redoc": "/redoc",
                 "openapi": "/openapi.json",
-                "health": "/api/health",
+                "health": "/api/v1/health",
             }
         )
 

@@ -2,12 +2,15 @@
 
 Flask REST API for Ajali! emergency incident reporting. Interactive docs are generated from the same route declarations used by the app.
 
+**API version:** all application routes live under `/api/v1`.
+
 | Resource | URL |
 | --- | --- |
 | Swagger UI | http://127.0.0.1:5000/docs |
 | ReDoc | http://127.0.0.1:5000/redoc |
 | OpenAPI spec | http://127.0.0.1:5000/openapi.json |
-| Health | http://127.0.0.1:5000/api/health |
+| Health | http://127.0.0.1:5000/api/v1/health |
+| Auth guide | [../docs/api-auth.md](../docs/api-auth.md) |
 
 ## Setup
 
@@ -38,6 +41,23 @@ Seed lookup codes (idempotent):
 python -m scripts.seed_lookups
 ```
 
+Seed demo accounts (Amina USER / Brian ADMIN, password `password`):
+
+```powershell
+python -m scripts.seed_demo_users
+```
+
+## Authentication (get a JWT)
+
+See **[docs/api-auth.md](../docs/api-auth.md)** for full detail.
+
+Quick path in Swagger:
+
+1. `POST /api/v1/auth/login` with `{"email":"brian@ajalihq.test","password":"password"}`
+2. Copy `accessToken`
+3. Click **Authorize** → paste token into **BearerAuth**
+4. Call protected endpoints (e.g. `GET /api/v1/auth/me`)
+
 ## Run the development server
 
 ```powershell
@@ -67,7 +87,8 @@ python -m pytest
 1. Create a Marshmallow schema in `app/schemas/`.
 2. Add a `MethodView` on the matching blueprint in `app/api/v1/`.
 3. Decorate with `@blp.arguments(...)` and `@blp.response(...)`.
-4. Restart Flask. The route appears in `/docs` automatically.
+4. For protected routes: `@jwt_required()` and `@blp.doc(security=[{"BearerAuth": []}])`.
+5. Restart Flask. The route appears in `/docs` automatically.
 
 Example:
 
@@ -88,9 +109,10 @@ class IncidentResource(MethodView):
         return incident
 ```
 
-Route prefixes match the frontend service contracts:
+Versioned route prefixes:
 
-- `/api/auth`
-- `/api/incidents`
-- `/api/admin`
-- `/api/departments`
+- `/api/v1/auth`
+- `/api/v1/incidents`
+- `/api/v1/admin`
+- `/api/v1/departments`
+- `/api/v1/health`

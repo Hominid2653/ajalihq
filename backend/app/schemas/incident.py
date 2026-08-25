@@ -1,6 +1,12 @@
 from marshmallow import Schema, fields, validate
 
 
+INCIDENT_TYPES = ["accident", "fire", "medical", "crime", "disaster"]
+URGENCIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+SEVERITIES = ["MINOR", "MODERATE", "MAJOR", "CRITICAL"]
+CONTACT_METHODS = ["PHONE", "EMAIL", "OTHER"]
+
+
 class IncidentSchema(Schema):
     id = fields.String(required=True)
     reference = fields.String(required=True)
@@ -110,3 +116,51 @@ class HandoffSchema(Schema):
     acknowledgedAt = fields.String(allow_none=True)
     completedAt = fields.String(allow_none=True)
     updatedAt = fields.String(required=True)
+
+
+class MediaInputSchema(Schema):
+    kind = fields.String(required=True, validate=validate.OneOf(["image", "video"]))
+    url = fields.String(required=True, validate=validate.Length(min=1, max=2000))
+    name = fields.String(required=True, validate=validate.Length(min=1, max=500))
+
+
+class CreateIncidentSchema(Schema):
+    title = fields.String(required=True, validate=validate.Length(min=1, max=300))
+    description = fields.String(required=True, validate=validate.Length(min=1, max=10000))
+    type = fields.String(load_default="accident", validate=validate.OneOf(INCIDENT_TYPES))
+    urgency = fields.String(load_default="MEDIUM", validate=validate.OneOf(URGENCIES))
+    severity = fields.String(load_default="MODERATE", validate=validate.OneOf(SEVERITIES))
+    location = fields.String(required=True, validate=validate.Length(min=1, max=500))
+    lat = fields.Float(load_default=None, allow_none=True)
+    lng = fields.Float(load_default=None, allow_none=True)
+    userId = fields.String(load_default=None, allow_none=True)
+    reporterName = fields.String(load_default=None, allow_none=True)
+    reporterEmail = fields.String(load_default=None, allow_none=True)
+    reporterPhone = fields.String(load_default=None, allow_none=True)
+    preferredContactMethod = fields.String(
+        load_default="PHONE",
+        validate=validate.OneOf(CONTACT_METHODS),
+    )
+    media = fields.List(fields.Nested(MediaInputSchema), load_default=None)
+
+
+class UpdateIncidentSchema(Schema):
+    """Partial update — only fields present in the request body are applied."""
+
+    title = fields.String(validate=validate.Length(min=1, max=300))
+    description = fields.String(validate=validate.Length(min=1, max=10000))
+    type = fields.String(validate=validate.OneOf(INCIDENT_TYPES))
+    urgency = fields.String(validate=validate.OneOf(URGENCIES))
+    severity = fields.String(validate=validate.OneOf(SEVERITIES))
+    location = fields.String(validate=validate.Length(min=1, max=500))
+    lat = fields.Float(allow_none=True)
+    lng = fields.Float(allow_none=True)
+    userId = fields.String(allow_none=True)
+    reporterName = fields.String(allow_none=True)
+    reporterEmail = fields.String(allow_none=True)
+    reporterPhone = fields.String(allow_none=True)
+    preferredContactMethod = fields.String(validate=validate.OneOf(CONTACT_METHODS))
+
+
+class ArchiveIncidentSchema(Schema):
+    reason = fields.String(required=True, validate=validate.Length(min=1, max=2000))

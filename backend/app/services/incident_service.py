@@ -1,8 +1,11 @@
-"""Incident read queries."""
+"""Incident read/write queries."""
 
 from __future__ import annotations
 
-from datetime import datetime
+import json
+import re
+from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -11,12 +14,14 @@ from sqlalchemy import Select, func, or_, select
 
 from app.extensions import db
 from app.models import (
+    AuditLog,
     Incident,
     IncidentDepartmentHandoff,
     IncidentMedia,
     IncidentNote,
     IncidentStatusHistory,
     IncidentUrgency,
+    Notification,
     ReporterVerification,
     User,
 )
@@ -30,6 +35,7 @@ from app.utils.serialize import (
 )
 
 COMMUNITY_STATUSES = ("VERIFIED", "IN_PROGRESS", "RESOLVED")
+_REF_RE = re.compile(r"^AJL-(\d+)$")
 
 
 def _parse_uuid(value: str, label: str = "id") -> UUID:
@@ -287,3 +293,265 @@ def list_all_handoffs() -> list[dict[str, Any]]:
 def verification_status_map() -> dict[str, str]:
     incidents = db.session.scalars(select(Incident)).all()
     return {str(i.id): latest_verification_status(i.id) for i in incidents}
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def next_reference() -> str:
+    refs = db.session.scalars(select(Incident.reference)).all()
+    highest = 0
+    for ref in refs:
+        match = _REF_RE.match(ref or "")
+        if match:
+            highest = max(highest, int(match.group(1)))
+    return f"AJL-{highest + 1:04d}"
+
+
+def ensure_can_edit_incident(incident: Incident, actor: User) -> None:
+    if incident.archived:
+        abort(409, message="Archived incidents cannot be edited.")
+    if actor.role_code == "ADMIN":
+        return
+    if incident.reporter_id != actor.id:
+        abort(403, message="You do not have permission to edit this incident.")
+
+
+def create_incident(data: dict[str, Any], actor: User) -> dict[str, Any]:
+    reporter_id = actor.id
+    if data.get("userId"):
+        requested = _parse_uuid(data["userId"], "userId")
+        if actor.role_code != "ADMIN" and requested != actor.id:
+            abort(403, message="Citizens can only create reports for themselves.")
+        reporter_id = requested
+
+    reporter = db.session.get(User, reporter_id)
+    if reporter is None:
+        abort(400, message="Reporter user was not found.")
+
+    title = data["title"].strip()
+    description = data["description"].strip()
+    location = data["location"].strip()
+    if not title or not description or not location:
+        abort(400, message="Title, description, and location are required.")
+
+    now = _utcnow()
+    urgency = data.get("urgency") or "MEDIUM"
+    incident = Incident(
+        reference=next_reference(),
+        title=title,
+        description=description,
+        type_code=data.get("type") or "accident",
+        urgency_code=urgency,
+        severity_code=data.get("severity") or "MODERATE",
+        status_code="PENDING",
+        location=location,
+        lat=Decimal(str(data["lat"])) if data.get("lat") is not None else None,
+        lng=Decimal(str(data["lng"])) if data.get("lng") is not None else None,
+        reporter_id=reporter_id,
+        reporter_name=(data.get("reporterName") or reporter.name or "").strip() or reporter.name,
+        reporter_email=(data.get("reporterEmail") or reporter.email or "").strip()
+        or reporter.email,
+        reporter_phone=(
+            (data.get("reporterPhone") or reporter.phone or "").strip() or reporter.phone
+        ),
+        preferred_contact_method=data.get("preferredContactMethod") or "PHONE",
+        archived=False,
+        created_at=now,
+        updated_at=now,
+    )
+    db.session.add(incident)
+    db.session.flush()
+
+    db.session.add(
+        IncidentStatusHistory(
+            incident_id=incident.id,
+            from_status_code=None,
+            to_status_code="PENDING",
+            actor_id=actor.id,
+            actor_name=actor.name,
+            reason="Incident created",
+            created_at=now,
+        )
+    )
+    db.session.add(
+        AuditLog(
+            incident_id=incident.id,
+            incident_reference=incident.reference,
+            entity_type="incident",
+            entity_id=incident.id,
+            actor_id=actor.id,
+            actor_name=actor.name,
+            action_code="REPORT_CREATED",
+            new_value="PENDING",
+            created_at=now,
+        )
+    )
+    notif_type = (
+        "CRITICAL_REPORT_RECEIVED" if urgency == "CRITICAL" else "REPORT_RECEIVED"
+    )
+    notif_title = (
+        "Critical urgency report received"
+        if urgency == "CRITICAL"
+        else "New report received"
+    )
+    db.session.add(
+        Notification(
+            recipient_id=None,
+            incident_id=incident.id,
+            type_code=notif_type,
+            channel_code="IN_APP",
+            title=notif_title,
+            body=f"{incident.reference}: {incident.title}",
+            read=False,
+            created_at=now,
+        )
+    )
+
+    for item in data.get("media") or []:
+        media = IncidentMedia(
+            incident_id=incident.id,
+            kind_code=item["kind"],
+            url=item["url"].strip(),
+            name=item["name"].strip(),
+            uploaded_by_id=actor.id,
+            created_at=now,
+        )
+        db.session.add(media)
+        db.session.add(
+            AuditLog(
+                incident_id=incident.id,
+                incident_reference=incident.reference,
+                entity_type="incident",
+                entity_id=incident.id,
+                actor_id=actor.id,
+                actor_name=actor.name,
+                action_code="MEDIA_ADDED",
+                new_value=media.name,
+                created_at=now,
+            )
+        )
+
+    db.session.commit()
+    return incident_to_dict(incident)
+
+
+def update_incident(
+    incident_id: str, patch: dict[str, Any], actor: User
+) -> dict[str, Any]:
+    incident = get_incident_or_404(incident_id)
+    ensure_can_edit_incident(incident, actor)
+
+    before = incident_to_dict(incident)
+    field_map = {
+        "title": "title",
+        "description": "description",
+        "type": "type_code",
+        "urgency": "urgency_code",
+        "severity": "severity_code",
+        "location": "location",
+        "reporterName": "reporter_name",
+        "reporterEmail": "reporter_email",
+        "reporterPhone": "reporter_phone",
+        "preferredContactMethod": "preferred_contact_method",
+    }
+
+    changed = False
+    for api_key, column in field_map.items():
+        if api_key not in patch or patch[api_key] is None:
+            continue
+        value = patch[api_key]
+        if isinstance(value, str):
+            value = value.strip()
+        setattr(incident, column, value)
+        changed = True
+
+    if "lat" in patch:
+        incident.lat = (
+            Decimal(str(patch["lat"])) if patch["lat"] is not None else None
+        )
+        changed = True
+    if "lng" in patch:
+        incident.lng = (
+            Decimal(str(patch["lng"])) if patch["lng"] is not None else None
+        )
+        changed = True
+
+    if "userId" in patch and patch["userId"] is not None:
+        if actor.role_code != "ADMIN":
+            abort(403, message="Only admins can reassign the reporter.")
+        new_reporter = _parse_uuid(patch["userId"], "userId")
+        if db.session.get(User, new_reporter) is None:
+            abort(400, message="Reporter user was not found.")
+        incident.reporter_id = new_reporter
+        changed = True
+
+    if not changed:
+        return incident_to_dict(incident)
+
+    incident.updated_at = _utcnow()
+    after = incident_to_dict(incident)
+    db.session.add(
+        AuditLog(
+            incident_id=incident.id,
+            incident_reference=incident.reference,
+            entity_type="incident",
+            entity_id=incident.id,
+            actor_id=actor.id,
+            actor_name=actor.name,
+            action_code="REPORT_UPDATED",
+            previous_value=json.dumps(before, default=str),
+            new_value=json.dumps(after, default=str),
+            created_at=incident.updated_at,
+        )
+    )
+    db.session.commit()
+    return after
+
+
+def archive_incident(incident_id: str, reason: str, actor: User) -> dict[str, Any]:
+    if actor.role_code != "ADMIN":
+        abort(403, message="Only admins can archive incidents.")
+    clean_reason = reason.strip()
+    if not clean_reason:
+        abort(400, message="An archive reason is required.")
+
+    incident = get_incident_or_404(incident_id)
+    if incident.archived:
+        abort(409, message="Incident is already archived.")
+
+    now = _utcnow()
+    incident.archived = True
+    incident.archive_reason = clean_reason
+    incident.updated_at = now
+
+    db.session.add(
+        AuditLog(
+            incident_id=incident.id,
+            incident_reference=incident.reference,
+            entity_type="incident",
+            entity_id=incident.id,
+            actor_id=actor.id,
+            actor_name=actor.name,
+            action_code="INCIDENT_ARCHIVED",
+            previous_value="false",
+            new_value="true",
+            reason=clean_reason,
+            created_at=now,
+        )
+    )
+    db.session.add(
+        Notification(
+            recipient_id=None,
+            incident_id=incident.id,
+            type_code="INCIDENT_ARCHIVED",
+            channel_code="IN_APP",
+            title="Incident archived",
+            body=f"{incident.reference} was archived.",
+            read=False,
+            created_at=now,
+        )
+    )
+    db.session.commit()
+    return incident_to_dict(incident)

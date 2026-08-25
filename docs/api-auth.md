@@ -89,6 +89,14 @@ Tokens expire after **12 hours** (`JWT_ACCESS_TOKEN_EXPIRES`). Set a long random
 | `GET` | `/api/v1/departments` | Bearer |
 | `GET` | `/api/v1/notifications` | Bearer |
 
+## Write endpoints (Phase 4)
+
+| Method | Path | Auth | Notes |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/incidents` | Bearer | Creates `PENDING`; history + audit + notification |
+| `PATCH` | `/api/v1/incidents/{id}` | Bearer | Metadata only — **no status change** |
+| `POST` | `/api/v1/incidents/{id}/archive` | ADMIN | Soft archive + reason required |
+
 ## API versioning
 
 | Prefix | Use |

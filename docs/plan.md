@@ -21,6 +21,7 @@ Replace the in-memory mock in `frontend/src/data/api.ts` with a **Flask REST API
 | 2026-08-25 | Supabase connected. `flask db upgrade` applied `17e2b4e7a636`. Lookup seed complete. |
 | 2026-08-25 | Phase 2a auth: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me` + JWT role claims. Demo users seeded. |
 | 2026-08-25 | Phase 3 reads: incidents list/get/active/community + nested resources; admin dashboard/audit; departments; notifications. Demo incident seed. Next: Phase 4 CRUD/archive. |
+| 2026-08-25 | Phase 4 writes: `POST/PATCH /api/v1/incidents`, `POST …/archive` with atomic audit/history/notifications. Next: Phase 5 lifecycle (verify/close/start/resolve/reopen). |
 
 ## Current baseline
 

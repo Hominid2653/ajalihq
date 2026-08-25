@@ -4,6 +4,8 @@ from flask_smorest import Blueprint
 
 from app.middleware.auth import get_current_user, role_required
 from app.schemas.incident import (
+    ArchiveIncidentSchema,
+    CreateIncidentSchema,
     HandoffSchema,
     IncidentListItemSchema,
     IncidentListQuerySchema,
@@ -11,6 +13,7 @@ from app.schemas.incident import (
     MediaSchema,
     NoteSchema,
     StatusHistorySchema,
+    UpdateIncidentSchema,
     VerificationSchema,
 )
 from app.services import incident_service
@@ -21,7 +24,7 @@ blp = Blueprint(
     url_prefix="/api/v1/incidents",
     description=(
         "Incident CRUD and lifecycle actions used by citizen and admin clients. "
-        "Read endpoints: list/get, active, community, notes, media, history, verifications, handoffs."
+        "Create/update/archive do not change lifecycle status — use moderation endpoints for that."
     ),
 )
 
@@ -53,6 +56,14 @@ class IncidentListResource(MethodView):
         actor = get_current_user()
         return incident_service.list_incidents(query_args, actor)
 
+    @jwt_required()
+    @blp.doc(security=[{"BearerAuth": []}])
+    @blp.arguments(CreateIncidentSchema)
+    @blp.response(201, IncidentSchema)
+    def post(self, data):
+        """Create a PENDING incident (atomic history + audit + notification)."""
+        return incident_service.create_incident(data, get_current_user())
+
 
 @blp.route("/verification-statuses")
 class VerificationStatusesResource(MethodView):
@@ -73,6 +84,28 @@ class IncidentResource(MethodView):
         """Return one incident."""
         actor = get_current_user()
         return incident_service.get_incident_dict(incident_id, actor)
+
+    @jwt_required()
+    @blp.doc(security=[{"BearerAuth": []}])
+    @blp.arguments(UpdateIncidentSchema)
+    @blp.response(200, IncidentSchema)
+    def patch(self, data, incident_id):
+        """Update incident metadata (status is not changed here)."""
+        return incident_service.update_incident(incident_id, data, get_current_user())
+
+
+@blp.route("/<incident_id>/archive")
+class IncidentArchiveResource(MethodView):
+    decorators = [role_required("ADMIN")]
+
+    @blp.doc(security=[{"BearerAuth": []}])
+    @blp.arguments(ArchiveIncidentSchema)
+    @blp.response(200, IncidentSchema)
+    def post(self, data, incident_id):
+        """Soft-archive an incident (admin only)."""
+        return incident_service.archive_incident(
+            incident_id, data["reason"], get_current_user()
+        )
 
 
 @blp.route("/<incident_id>/notes")

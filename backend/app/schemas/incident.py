@@ -60,6 +60,16 @@ class IncidentListQuerySchema(Schema):
         validate=validate.OneOf(["urgency", "newest"]),
     )
     includeArchived = fields.Boolean(load_default=False)
+    limit = fields.Integer(load_default=50)
+    offset = fields.Integer(load_default=0)
+
+
+class IncidentListPageSchema(Schema):
+    items = fields.List(fields.Nested(IncidentListItemSchema), required=True)
+    total = fields.Integer(required=True)
+    limit = fields.Integer(required=True)
+    offset = fields.Integer(required=True)
+    hasMore = fields.Boolean(required=True)
 
 
 class NoteSchema(Schema):
@@ -118,6 +128,18 @@ class HandoffSchema(Schema):
     updatedAt = fields.String(required=True)
 
 
+class IncidentDetailSchema(Schema):
+    """Aggregate payload for review / detail screens."""
+
+    incident = fields.Nested(IncidentSchema, required=True)
+    history = fields.List(fields.Nested(StatusHistorySchema), required=True)
+    notes = fields.List(fields.Nested(NoteSchema), required=True)
+    media = fields.List(fields.Nested(MediaSchema), required=True)
+    verification = fields.Nested(VerificationSchema, allow_none=True)
+    verifications = fields.List(fields.Nested(VerificationSchema), required=True)
+    handoffs = fields.List(fields.Nested(HandoffSchema), required=True)
+
+
 class MediaInputSchema(Schema):
     kind = fields.String(required=True, validate=validate.OneOf(["image", "video"]))
     url = fields.String(required=True, validate=validate.Length(min=1, max=2000))
@@ -164,3 +186,84 @@ class UpdateIncidentSchema(Schema):
 
 class ArchiveIncidentSchema(Schema):
     reason = fields.String(required=True, validate=validate.Length(min=1, max=2000))
+
+
+CLOSE_REASONS = [
+    "FALSE_REPORT",
+    "DUPLICATE",
+    "UNABLE_TO_VERIFY",
+    "INSUFFICIENT_INFORMATION",
+    "OTHER",
+]
+VERIFICATION_METHODS = ["PHONE", "EMAIL", "OTHER"]
+RESOLUTION_OUTCOMES = [
+    "RESOLVED",
+    "ASSISTANCE_PROVIDED",
+    "REFERRED",
+    "UNABLE_TO_ASSIST",
+    "OTHER",
+]
+
+
+class VerifyIncidentSchema(Schema):
+    method = fields.String(required=True, validate=validate.OneOf(VERIFICATION_METHODS))
+    notes = fields.String(load_default=None, allow_none=True)
+
+
+class CloseIncidentSchema(Schema):
+    reason = fields.String(required=True, validate=validate.Length(min=1, max=2000))
+    reasonCode = fields.String(
+        load_default="OTHER",
+        validate=validate.OneOf(CLOSE_REASONS),
+    )
+    failVerification = fields.Boolean(load_default=False)
+
+
+class StartResponseSchema(Schema):
+    departmentIds = fields.List(
+        fields.String(),
+        required=True,
+        validate=validate.Length(min=1),
+    )
+    notes = fields.String(load_default=None, allow_none=True)
+
+
+class NotifyCitizenSchema(Schema):
+    sms = fields.Boolean(load_default=False)
+    email = fields.Boolean(load_default=False)
+
+
+class ResolveIncidentSchema(Schema):
+    summary = fields.String(required=True, validate=validate.Length(min=1, max=5000))
+    notes = fields.String(load_default=None, allow_none=True)
+    outcome = fields.String(required=True, validate=validate.OneOf(RESOLUTION_OUTCOMES))
+    completeHandoffs = fields.Boolean(load_default=True)
+    notifyCitizen = fields.Nested(NotifyCitizenSchema, load_default=None)
+
+
+class ReopenIncidentSchema(Schema):
+    reason = fields.String(required=True, validate=validate.Length(min=1, max=2000))
+
+
+class AddNoteSchema(Schema):
+    body = fields.String(required=True, validate=validate.Length(min=1, max=10000))
+
+
+class AddMediaSchema(Schema):
+    kind = fields.String(required=True, validate=validate.OneOf(["image", "video"]))
+    url = fields.String(required=True, validate=validate.Length(min=1, max=2000))
+    name = fields.String(required=True, validate=validate.Length(min=1, max=500))
+
+
+class UpdateHandoffSchema(Schema):
+    status = fields.String(
+        required=True,
+        validate=validate.OneOf(
+            ["PENDING", "ACKNOWLEDGED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
+        ),
+    )
+    notes = fields.String(allow_none=True)
+
+
+class CompleteHandoffSchema(Schema):
+    notes = fields.String(load_default=None, allow_none=True)

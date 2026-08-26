@@ -3,11 +3,13 @@ from flask_jwt_extended import jwt_required
 from flask_smorest import Blueprint
 
 from app.middleware.auth import get_current_user
+from app.middleware.rate_limit import rate_limit
 from app.schemas.auth import (
     AuthUserSchema,
     LoginResponseSchema,
     LoginSchema,
     RegisterSchema,
+    UpdateProfileSchema,
 )
 from app.services import auth_service
 
@@ -23,6 +25,7 @@ blp = Blueprint(
 class RegisterResource(MethodView):
     @blp.arguments(RegisterSchema)
     @blp.response(201, AuthUserSchema)
+    @rate_limit(limit=10, window_seconds=60)
     def post(self, data):
         """Create a citizen (USER) account."""
         user = auth_service.register_user(
@@ -42,6 +45,7 @@ class RegisterResource(MethodView):
 class LoginResource(MethodView):
     @blp.arguments(LoginSchema)
     @blp.response(200, LoginResponseSchema)
+    @rate_limit(limit=20, window_seconds=60)
     def post(self, data):
         """Exchange email/password for a JWT and AuthUser payload."""
         token, user = auth_service.authenticate(data["email"], data["password"])
@@ -59,4 +63,13 @@ class MeResource(MethodView):
     def get(self):
         """Return the authenticated user."""
         user = get_current_user()
+        return auth_service.user_to_auth_dict(user)
+
+    @jwt_required()
+    @blp.doc(security=[{"BearerAuth": []}])
+    @blp.arguments(UpdateProfileSchema)
+    @blp.response(200, AuthUserSchema)
+    def patch(self, data):
+        """Update the authenticated user's profile (AccountPage)."""
+        user = auth_service.update_profile(get_current_user(), data)
         return auth_service.user_to_auth_dict(user)

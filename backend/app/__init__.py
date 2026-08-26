@@ -10,6 +10,12 @@ def create_app(config_name: str | None = None) -> Flask:
     app.config.from_object(get_config(config_name))
     app.url_map.strict_slashes = False
 
+    jwt_secret = str(app.config.get("JWT_SECRET_KEY") or "")
+    if not app.config.get("TESTING") and len(jwt_secret) < 32:
+        app.logger.warning(
+            "JWT_SECRET_KEY is shorter than 32 characters — set a long random value in .env."
+        )
+
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)

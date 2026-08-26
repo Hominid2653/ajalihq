@@ -34,6 +34,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
     }
 
     CORS_ORIGINS = _split_origins(
@@ -94,6 +97,8 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     JWT_SECRET_KEY = "test-jwt-secret-key-at-least-32-bytes"
+    # In-memory SQLite does not use a real connection pool.
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
 
 class ProductionConfig(Config):

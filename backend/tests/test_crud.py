@@ -94,10 +94,10 @@ def test_create_update_archive_incident(client, app):
 
     listed = client.get("/api/v1/incidents", headers=admin)
     assert listed.status_code == 200
-    assert all(item["id"] != incident_id for item in listed.get_json())
+    assert all(item["id"] != incident_id for item in listed.get_json()["items"])
 
     with_archived = client.get(
         "/api/v1/incidents?includeArchived=true",
         headers=admin,
     )
-    assert any(item["id"] == incident_id for item in with_archived.get_json())
+    assert any(item["id"] == incident_id for item in with_archived.get_json()["items"])

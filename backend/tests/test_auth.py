@@ -57,6 +57,15 @@ def test_register_login_me(client):
     assert me.status_code == 200
     assert me.get_json()["email"] == "citizen@example.com"
 
+    patched = client.patch(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"location": "Nairobi", "bio": "Reporter"},
+    )
+    assert patched.status_code == 200, patched.get_json()
+    assert patched.get_json()["location"] == "Nairobi"
+    assert patched.get_json()["bio"] == "Reporter"
+
     unauth = client.get("/api/v1/auth/me")
     assert unauth.status_code == 401
 

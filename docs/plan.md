@@ -22,6 +22,9 @@ Replace the in-memory mock in `frontend/src/data/api.ts` with a **Flask REST API
 | 2026-08-25 | Phase 2a auth: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me` + JWT role claims. Demo users seeded. |
 | 2026-08-25 | Phase 3 reads: incidents list/get/active/community + nested resources; admin dashboard/audit; departments; notifications. Demo incident seed. Next: Phase 4 CRUD/archive. |
 | 2026-08-25 | Phase 4 writes: `POST/PATCH /api/v1/incidents`, `POST …/archive` with atomic audit/history/notifications. Next: Phase 5 lifecycle (verify/close/start/resolve/reopen). |
+| 2026-08-25 | Phase 5 lifecycle: verify/close/start-response/resolve/reopen against `incident_status_transitions`. Next: Phase 6 supporting writes (notes/media/handoffs) or Phase 7 frontend wiring. |
+| 2026-08-25 | Phase 6 supporting writes: notes/media, handoffs, department CRUD, notification read markers. Next: Phase 7 frontend → Flask. |
+| 2026-08-25 | Pre–Phase 7 backend hardening (audit): PII strip on public feeds, pagination, detail bundle, dashboard SQL, PATCH `/auth/me`, admin users, rate limits, notes DESC. Frontend adapters → `.cursor/rules/frontend-flask-integration.mdc`. |
 
 ## Current baseline
 
@@ -216,4 +219,4 @@ All application routes are versioned under **`/api/v1`**. Auth usage: [`docs/api
 
 ## Next action
 
-**Phase 0 → Phase 1:** Wire `DATABASE_URL` to Supabase, add psycopg, implement SQLAlchemy models from `docs/erd.dbml`, run first Alembic migration, seed lookups.
+**Phase 7:** Wire frontend services to Flask using `.cursor/rules/frontend-flask-integration.mdc` (JWT storage, page envelopes, path adapters). Keep `VITE_USE_MOCK_API` until cutover.

@@ -92,7 +92,9 @@ def ensure_can_view_incident(incident: Incident, actor: User) -> None:
         abort(403, message="You do not have permission to view this incident.")
 
 
-def list_incidents(filters: dict[str, Any], actor: User) -> list[dict[str, Any]]:
+def list_incidents(filters: dict[str, Any], actor: User) -> dict[str, Any]:
+    from app.utils.pagination import page_payload, parse_pagination
+
     latest = _latest_verification_subquery()
     stmt: Select[Any] = (
         select(Incident, latest.c.status_code)
@@ -158,11 +160,15 @@ def list_incidents(filters: dict[str, Any], actor: User) -> list[dict[str, Any]]
             Incident.created_at.desc(),
         )
 
-    rows = db.session.execute(stmt).all()
-    return [
+    count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
+    total = int(db.session.scalar(count_stmt) or 0)
+    limit, offset = parse_pagination(filters)
+    rows = db.session.execute(stmt.limit(limit).offset(offset)).all()
+    items = [
         incident_to_dict(incident, verification_status=status or "PENDING")
         for incident, status in rows
     ]
+    return page_payload(items, total=total, limit=limit, offset=offset)
 
 
 def _parse_dt(raw: str, *, end: bool) -> datetime:
@@ -203,7 +209,7 @@ def list_active() -> list[dict[str, Any]]:
         )
         .order_by(Incident.updated_at.desc())
     ).all()
-    return [incident_to_dict(row) for row in rows]
+    return [incident_to_dict(row, public=True) for row in rows]
 
 
 def list_community() -> list[dict[str, Any]]:
@@ -215,7 +221,7 @@ def list_community() -> list[dict[str, Any]]:
         )
         .order_by(Incident.updated_at.desc())
     ).all()
-    return [incident_to_dict(row) for row in rows]
+    return [incident_to_dict(row, public=True) for row in rows]
 
 
 def list_notes(incident_id: str, actor: User) -> list[dict[str, Any]]:
@@ -224,7 +230,7 @@ def list_notes(incident_id: str, actor: User) -> list[dict[str, Any]]:
     rows = db.session.scalars(
         select(IncidentNote)
         .where(IncidentNote.incident_id == incident.id)
-        .order_by(IncidentNote.created_at.asc())
+        .order_by(IncidentNote.created_at.desc())
     ).all()
     return [note_to_dict(row) for row in rows]
 
@@ -291,8 +297,29 @@ def list_all_handoffs() -> list[dict[str, Any]]:
 
 
 def verification_status_map() -> dict[str, str]:
-    incidents = db.session.scalars(select(Incident)).all()
-    return {str(i.id): latest_verification_status(i.id) for i in incidents}
+    """Single query: incident id → latest verification status (no N+1)."""
+    latest = _latest_verification_subquery()
+    rows = db.session.execute(
+        select(
+            Incident.id,
+            func.coalesce(latest.c.status_code, "PENDING"),
+        ).outerjoin(latest, latest.c.incident_id == Incident.id)
+    ).all()
+    return {str(incident_id): status for incident_id, status in rows}
+
+
+def get_incident_detail(incident_id: str, actor: User) -> dict[str, Any]:
+    """Aggregate for review/detail pages — one round-trip instead of 6–8."""
+    incident = get_incident_dict(incident_id, actor)
+    return {
+        "incident": incident,
+        "history": list_history(incident_id, actor),
+        "notes": list_notes(incident_id, actor),
+        "media": list_media(incident_id, actor),
+        "verification": get_latest_verification(incident_id, actor),
+        "verifications": list_verifications(incident_id, actor),
+        "handoffs": list_handoffs_for_incident(incident_id, actor),
+    }
 
 
 def _utcnow() -> datetime:
@@ -492,6 +519,13 @@ def update_incident(
 
     incident.updated_at = _utcnow()
     after = incident_to_dict(incident)
+    prev_diff: dict[str, Any] = {}
+    next_diff: dict[str, Any] = {}
+    for key, old_val in before.items():
+        new_val = after.get(key)
+        if old_val != new_val:
+            prev_diff[key] = old_val
+            next_diff[key] = new_val
     db.session.add(
         AuditLog(
             incident_id=incident.id,
@@ -501,8 +535,8 @@ def update_incident(
             actor_id=actor.id,
             actor_name=actor.name,
             action_code="REPORT_UPDATED",
-            previous_value=json.dumps(before, default=str),
-            new_value=json.dumps(after, default=str),
+            previous_value=json.dumps(prev_diff, default=str) if prev_diff else None,
+            new_value=json.dumps(next_diff, default=str) if next_diff else None,
             created_at=incident.updated_at,
         )
     )
@@ -555,3 +589,102 @@ def archive_incident(incident_id: str, reason: str, actor: User) -> dict[str, An
     )
     db.session.commit()
     return incident_to_dict(incident)
+
+
+def add_note(incident_id: str, body: str, actor: User) -> dict[str, Any]:
+    incident = get_incident_or_404(incident_id)
+    ensure_can_view_incident(incident, actor)
+    clean = body.strip()
+    if not clean:
+        abort(400, message="Note body is required.")
+
+    now = _utcnow()
+    note = IncidentNote(
+        incident_id=incident.id,
+        author_id=actor.id,
+        author_name=actor.name,
+        body=clean,
+        created_at=now,
+        updated_at=now,
+    )
+    db.session.add(note)
+    db.session.add(
+        AuditLog(
+            incident_id=incident.id,
+            incident_reference=incident.reference,
+            entity_type="incident",
+            entity_id=incident.id,
+            actor_id=actor.id,
+            actor_name=actor.name,
+            action_code="NOTE_ADDED",
+            created_at=now,
+        )
+    )
+    db.session.commit()
+    return note_to_dict(note)
+
+
+def add_media(
+    incident_id: str, data: dict[str, Any], actor: User
+) -> dict[str, Any]:
+    incident = get_incident_or_404(incident_id)
+    ensure_can_edit_incident(incident, actor)
+
+    now = _utcnow()
+    media = IncidentMedia(
+        incident_id=incident.id,
+        kind_code=data["kind"],
+        url=data["url"].strip(),
+        name=data["name"].strip(),
+        uploaded_by_id=actor.id,
+        created_at=now,
+    )
+    db.session.add(media)
+    db.session.add(
+        AuditLog(
+            incident_id=incident.id,
+            incident_reference=incident.reference,
+            entity_type="incident",
+            entity_id=incident.id,
+            actor_id=actor.id,
+            actor_name=actor.name,
+            action_code="MEDIA_ADDED",
+            new_value=media.name,
+            created_at=now,
+        )
+    )
+    db.session.commit()
+    return media_to_dict(media)
+
+
+def remove_media(media_id: str, actor: User) -> bool:
+    try:
+        uid = UUID(media_id)
+    except ValueError:
+        abort(400, message="Invalid media id.")
+    media = db.session.get(IncidentMedia, uid)
+    if media is None or media.deleted_at is not None:
+        return False
+
+    incident = db.session.get(Incident, media.incident_id)
+    if incident is None:
+        abort(404, message="Incident not found.")
+    ensure_can_edit_incident(incident, actor)
+
+    now = _utcnow()
+    media.deleted_at = now
+    db.session.add(
+        AuditLog(
+            incident_id=incident.id,
+            incident_reference=incident.reference,
+            entity_type="incident",
+            entity_id=incident.id,
+            actor_id=actor.id,
+            actor_name=actor.name,
+            action_code="MEDIA_REMOVED",
+            previous_value=media.name,
+            created_at=now,
+        )
+    )
+    db.session.commit()
+    return True

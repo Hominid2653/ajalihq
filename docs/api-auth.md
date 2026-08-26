@@ -97,6 +97,34 @@ Tokens expire after **12 hours** (`JWT_ACCESS_TOKEN_EXPIRES`). Set a long random
 | `PATCH` | `/api/v1/incidents/{id}` | Bearer | Metadata only — **no status change** |
 | `POST` | `/api/v1/incidents/{id}/archive` | ADMIN | Soft archive + reason required |
 
+## Lifecycle endpoints (Phase 5) — ADMIN only
+
+| Method | Path | Transition |
+| --- | --- | --- |
+| `POST` | `/api/v1/incidents/{id}/verify` | PENDING → VERIFIED |
+| `POST` | `/api/v1/incidents/{id}/close` | PENDING\|VERIFIED → CLOSED |
+| `POST` | `/api/v1/incidents/{id}/start-response` | VERIFIED → IN_PROGRESS (+ handoffs) |
+| `POST` | `/api/v1/incidents/{id}/resolve` | IN_PROGRESS → RESOLVED |
+| `POST` | `/api/v1/incidents/{id}/reopen` | RESOLVED → IN_PROGRESS or CLOSED → PENDING |
+
+Each lifecycle write is one DB transaction: incident update + status history + audit log + notifications. Invalid transitions return **409**.
+
+## Supporting writes (Phase 6)
+
+| Method | Path | Auth |
+| --- | --- | --- |
+| `POST` | `/api/v1/incidents/{id}/notes` | Bearer |
+| `POST` | `/api/v1/incidents/{id}/media` | Bearer |
+| `DELETE` | `/api/v1/incidents/media/{mediaId}` | Bearer (soft delete) |
+| `PATCH` | `/api/v1/handoffs/{id}` | ADMIN |
+| `POST` | `/api/v1/handoffs/{id}/complete` | ADMIN |
+| `POST` | `/api/v1/departments` | ADMIN |
+| `PATCH` | `/api/v1/departments/{id}` | ADMIN |
+| `POST` | `/api/v1/departments/{id}/activate` | ADMIN |
+| `POST` | `/api/v1/departments/{id}/deactivate` | ADMIN |
+| `POST` | `/api/v1/notifications/{id}/read` | Bearer |
+| `POST` | `/api/v1/notifications/read-all` | Bearer |
+
 ## API versioning
 
 | Prefix | Use |

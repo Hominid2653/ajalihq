@@ -87,3 +87,57 @@ def authenticate(email: str, password: str) -> tuple[str, User]:
         additional_claims={"role": user.role_code, "email": user.email},
     )
     return token, user
+
+
+def update_profile(user: User, patch: dict[str, Any]) -> User:
+    """Update the authenticated user's profile fields (AccountPage)."""
+    if "name" in patch and patch["name"] is not None:
+        clean = str(patch["name"]).strip()
+        if not clean:
+            abort(400, message="Name cannot be empty.")
+        user.name = clean
+
+    if "phone" in patch:
+        phone = patch["phone"]
+        user.phone = phone.strip() if isinstance(phone, str) and phone.strip() else None
+
+    if "location" in patch:
+        loc = patch["location"]
+        user.location = loc.strip() if isinstance(loc, str) and loc.strip() else None
+
+    if "bio" in patch:
+        bio = patch["bio"]
+        user.bio = bio.strip() if isinstance(bio, str) and bio.strip() else None
+
+    if "avatarUrl" in patch:
+        avatar = patch["avatarUrl"]
+        user.avatar_url = (
+            avatar.strip() if isinstance(avatar, str) and avatar.strip() else None
+        )
+
+    if "preferredContactMethod" in patch and patch["preferredContactMethod"]:
+        user.preferred_contact_method = patch["preferredContactMethod"]
+
+    if "idNumber" in patch:
+        raw = patch["idNumber"]
+        if raw is None or (isinstance(raw, str) and not raw.strip()):
+            user.id_number = None
+            user.id_verified = False
+        else:
+            normalized_id = normalize_id_number(str(raw))
+            if not is_valid_id_number(normalized_id):
+                abort(400, message="National ID must be 7–8 digits.")
+            taken = db.session.scalar(
+                select(User).where(
+                    User.id_number == normalized_id,
+                    User.id != user.id,
+                )
+            )
+            if taken is not None:
+                abort(409, message="That ID number is already linked to another account.")
+            user.id_number = normalized_id
+            user.id_verified = True
+
+    user.profile_complete = bool(user.name and user.phone)
+    db.session.commit()
+    return user

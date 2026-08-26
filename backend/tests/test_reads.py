@@ -90,9 +90,14 @@ def test_public_active_and_community(client, app):
 
     active = client.get("/api/v1/incidents/active")
     assert active.status_code == 200
-    refs = {item["reference"] for item in active.get_json()}
+    body = active.get_json()
+    refs = {item["reference"] for item in body}
     assert "AJL-9002" in refs
     assert "AJL-9001" not in refs
+    for item in body:
+        assert item.get("reporterEmail") is None
+        assert item.get("reporterPhone") is None
+        assert item.get("reporterName") is None
 
     community = client.get("/api/v1/incidents/community")
     assert community.status_code == 200
@@ -107,8 +112,11 @@ def test_list_and_get_rbac(client, app):
 
     citizen_list = client.get("/api/v1/incidents", headers=citizen_headers)
     assert citizen_list.status_code == 200
-    assert len(citizen_list.get_json()) == 2
-    assert "verificationStatus" in citizen_list.get_json()[0]
+    page = citizen_list.get_json()
+    assert "items" in page
+    assert page["total"] == 2
+    assert len(page["items"]) == 2
+    assert "verificationStatus" in page["items"][0]
 
     detail = client.get(
         f"/api/v1/incidents/{ids['pending_id']}",
@@ -116,7 +124,18 @@ def test_list_and_get_rbac(client, app):
     )
     assert detail.status_code == 200
     assert detail.get_json()["reference"] == "AJL-9001"
-    assert detail.get_json()["userId"] == detail.get_json()["userId"]
+
+    bundle = client.get(
+        f"/api/v1/incidents/{ids['pending_id']}/detail",
+        headers=citizen_headers,
+    )
+    assert bundle.status_code == 200
+    bundle_body = bundle.get_json()
+    assert bundle_body["incident"]["reference"] == "AJL-9001"
+    assert "history" in bundle_body
+    assert "notes" in bundle_body
+    assert "media" in bundle_body
+    assert "handoffs" in bundle_body
 
     admin_dash = client.get("/api/v1/admin/dashboard", headers=admin_headers)
     assert admin_dash.status_code == 200
@@ -130,3 +149,8 @@ def test_list_and_get_rbac(client, app):
 
     audit = client.get("/api/v1/admin/audit-logs", headers=admin_headers)
     assert audit.status_code == 200
+    assert "items" in audit.get_json()
+
+    users = client.get("/api/v1/admin/users", headers=admin_headers)
+    assert users.status_code == 200
+    assert users.get_json()["total"] >= 2

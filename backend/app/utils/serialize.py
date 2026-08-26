@@ -39,7 +39,12 @@ def _coord(value: Decimal | float | None) -> float | None:
     return float(value)
 
 
-def incident_to_dict(incident: Incident, *, verification_status: str | None = None) -> dict[str, Any]:
+def incident_to_dict(
+    incident: Incident,
+    *,
+    verification_status: str | None = None,
+    public: bool = False,
+) -> dict[str, Any]:
     data: dict[str, Any] = {
         "id": str(incident.id),
         "reference": incident.reference,
@@ -53,10 +58,6 @@ def incident_to_dict(incident: Incident, *, verification_status: str | None = No
         "lat": _coord(incident.lat),
         "lng": _coord(incident.lng),
         "userId": str(incident.reporter_id),
-        "reporterName": incident.reporter_name,
-        "reporterEmail": incident.reporter_email,
-        "reporterPhone": incident.reporter_phone,
-        "preferredContactMethod": incident.preferred_contact_method,
         "closeReasonCode": incident.close_reason_code,
         "resolutionSummary": incident.resolution_summary,
         "resolutionNotes": incident.resolution_notes,
@@ -69,6 +70,17 @@ def incident_to_dict(incident: Incident, *, verification_status: str | None = No
         "createdAt": _iso(incident.created_at),
         "updatedAt": _iso(incident.updated_at),
     }
+    if public:
+        # Public map / community feeds must not expose reporter contact PII.
+        data["reporterName"] = None
+        data["reporterEmail"] = None
+        data["reporterPhone"] = None
+        data["preferredContactMethod"] = None
+    else:
+        data["reporterName"] = incident.reporter_name
+        data["reporterEmail"] = incident.reporter_email
+        data["reporterPhone"] = incident.reporter_phone
+        data["preferredContactMethod"] = incident.preferred_contact_method
     if verification_status is not None:
         data["verificationStatus"] = verification_status
     return data

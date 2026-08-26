@@ -23,7 +23,8 @@ class AuthUserSchema(Schema):
 class RegisterSchema(Schema):
     name = fields.String(required=True, validate=validate.Length(min=1, max=200))
     email = fields.Email(required=True)
-    password = fields.String(required=True, validate=validate.Length(min=8, max=128))
+    # Min 6 to match SignUp UI validation (frontend).
+    password = fields.String(required=True, validate=validate.Length(min=6, max=128))
     phone = fields.String(load_default=None, allow_none=True)
     avatarUrl = fields.String(load_default=None, allow_none=True)
     location = fields.String(load_default=None, allow_none=True)
@@ -42,3 +43,17 @@ class LoginSchema(Schema):
 class LoginResponseSchema(Schema):
     accessToken = fields.String(required=True)
     user = fields.Nested(AuthUserSchema, required=True)
+
+
+class UpdateProfileSchema(Schema):
+    """Partial profile update for PATCH /auth/me."""
+
+    name = fields.String(validate=validate.Length(min=1, max=200))
+    phone = fields.String(allow_none=True)
+    location = fields.String(allow_none=True)
+    bio = fields.String(allow_none=True)
+    avatarUrl = fields.String(allow_none=True)
+    preferredContactMethod = fields.String(
+        validate=validate.OneOf(["PHONE", "EMAIL", "OTHER"])
+    )
+    idNumber = fields.String(allow_none=True)

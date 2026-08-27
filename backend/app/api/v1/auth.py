@@ -23,11 +23,15 @@ blp = Blueprint(
 
 @blp.route("/register")
 class RegisterResource(MethodView):
+    @rate_limit(scope="register")
     @blp.arguments(RegisterSchema)
     @blp.response(201, AuthUserSchema)
-    @rate_limit(limit=10, window_seconds=60)
+    @blp.alt_response(429, description="Too many registration attempts (rate limited).")
     def post(self, data):
-        """Create a citizen (USER) account."""
+        """Create a citizen (USER) account.
+
+        Rate-limited per IP and email (default 5 requests / 60s).
+        """
         user = auth_service.register_user(
             name=data["name"],
             email=data["email"],
@@ -43,11 +47,16 @@ class RegisterResource(MethodView):
 
 @blp.route("/login")
 class LoginResource(MethodView):
+    @rate_limit(scope="login")
     @blp.arguments(LoginSchema)
     @blp.response(200, LoginResponseSchema)
-    @rate_limit(limit=20, window_seconds=60)
+    @blp.alt_response(429, description="Too many login attempts (rate limited).")
     def post(self, data):
-        """Exchange email/password for a JWT and AuthUser payload."""
+        """Exchange email/password for a JWT and AuthUser payload.
+
+        Rate-limited per IP and email (default 10 requests / 60s) to slow
+        credential stuffing while remaining demo-friendly in Swagger.
+        """
         token, user = auth_service.authenticate(data["email"], data["password"])
         return {
             "accessToken": token,

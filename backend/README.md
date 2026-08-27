@@ -1,8 +1,8 @@
 # Ajali! API
 
-Flask REST API for Ajali! emergency incident reporting. Interactive docs are generated from the same route declarations used by the app.
+Flask REST API for Ajali emergency incident reporting. Interactive docs are generated from the same route declarations used by the app.
 
-**API version:** all application routes live under `/api/v1`.
+**API version:** all application are under `/api/v1`.
 
 | Resource | URL |
 | --- | --- |
@@ -55,7 +55,7 @@ python -m scripts.seed_demo_data
 
 ## Authentication (get a JWT)
 
-See **[docs/api-auth.md](../docs/api-auth.md)** for full detail.
+See **[docs/api-auth.md](../docs/api-auth.md)** for full detail (JWT usage, demo accounts, **auth rate limits**).
 
 Quick path in Swagger:
 
@@ -63,6 +63,8 @@ Quick path in Swagger:
 2. Copy `accessToken`
 3. Click **Authorize** → paste token into **BearerAuth**
 4. Call protected endpoints (e.g. `GET /api/v1/auth/me`)
+
+Login and register are rate-limited (default 10/min and 5/min per IP and email). Over budget returns `429` + `Retry-After`.
 
 ## Run the development server
 

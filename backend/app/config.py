@@ -5,7 +5,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Always load backend/.env so DATABASE_URL is available outside `flask` CLI.
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+try:
+    load_dotenv(_ENV_PATH)
+except UnicodeDecodeError:
+    # Windows editors sometimes save en-dashes as cp1252 (0x97).
+    load_dotenv(_ENV_PATH, encoding="cp1252")
 
 
 def _split_origins(raw: str) -> list[str]:
@@ -26,6 +31,23 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=12)
     JWT_TOKEN_LOCATION = ["headers"]
+
+    # Auth rate limits (sliding window). Disabled automatically when TESTING=True
+    # unless RATE_LIMIT_ENABLED is set True in a test.
+    RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    AUTH_LOGIN_RATE_LIMIT = int(os.getenv("AUTH_LOGIN_RATE_LIMIT", "10"))
+    AUTH_LOGIN_RATE_WINDOW_SECONDS = int(
+        os.getenv("AUTH_LOGIN_RATE_WINDOW_SECONDS", "60")
+    )
+    AUTH_REGISTER_RATE_LIMIT = int(os.getenv("AUTH_REGISTER_RATE_LIMIT", "5"))
+    AUTH_REGISTER_RATE_WINDOW_SECONDS = int(
+        os.getenv("AUTH_REGISTER_RATE_WINDOW_SECONDS", "60")
+    )
 
     # Default is local SQLite only as a last resort. Sprint 2+ uses Supabase Postgres.
     SQLALCHEMY_DATABASE_URI = _normalize_database_url(
@@ -95,6 +117,7 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
+    RATE_LIMIT_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     JWT_SECRET_KEY = "test-jwt-secret-key-at-least-32-bytes"
     # In-memory SQLite does not use a real connection pool.

@@ -70,6 +70,27 @@ Register always creates `role: USER`. Admins are created via seed (or a future a
 
 Tokens expire after **12 hours** (`JWT_ACCESS_TOKEN_EXPIRES`). Set a long random `JWT_SECRET_KEY` (≥ 32 characters) in `backend/.env`.
 
+## Rate limiting (auth)
+
+`POST /login` and `POST /register` use a sliding-window limiter (in-process):
+
+| Endpoint | Default budget | Keys |
+| --- | --- | --- |
+| `POST /api/v1/auth/login` | **10** requests / **60s** | Client IP **and** email (when present) |
+| `POST /api/v1/auth/register` | **5** requests / **60s** | Client IP **and** email (when present) |
+
+When exceeded, the API returns **429 Too Many Requests** with a `Retry-After` header (seconds). Tunable via env:
+
+```env
+RATE_LIMIT_ENABLED=true
+AUTH_LOGIN_RATE_LIMIT=10
+AUTH_LOGIN_RATE_WINDOW_SECONDS=60
+AUTH_REGISTER_RATE_LIMIT=5
+AUTH_REGISTER_RATE_WINDOW_SECONDS=60
+```
+
+Defaults stay demo-friendly for Swagger try-outs while slowing credential stuffing. Tests disable limiting unless a case opts in.
+
 ## Read endpoints (Phase 3)
 
 | Method | Path | Auth |

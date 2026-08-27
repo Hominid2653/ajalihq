@@ -116,6 +116,16 @@ Each lifecycle write is one DB transaction: incident update + status history + a
 | `POST` | `/api/v1/notifications/{id}/read` | Bearer |
 | `POST` | `/api/v1/notifications/read-all` | Bearer |
 
+## Open-Meteo proxies (public)
+
+Same hosts as the frontend (`GEOCODE_API_BASE` / `WEATHER_API_BASE`). No API key. See [`docs/openweather.md`](openweather.md).
+
+| Method | Path | Auth |
+| --- | --- | --- |
+| `GET` | `/api/v1/geo/search?q=` | None |
+| `GET` | `/api/v1/geo/reverse?lat=&lng=` | None |
+| `GET` | `/api/v1/weather/current?lat=&lng=` | None |
+
 ## API versioning
 
 | Prefix | Use |

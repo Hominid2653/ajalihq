@@ -64,6 +64,15 @@ class Config:
         in ("1", "true", "yes")
     )
 
+    # Open-Meteo (same public bases as frontend VITE_GEOCODE_API_BASE / VITE_WEATHER_API_BASE)
+    GEOCODE_API_BASE = (
+        os.getenv("GEOCODE_API_BASE") or "https://geocoding-api.open-meteo.com"
+    ).rstrip("/")
+    WEATHER_API_BASE = (
+        os.getenv("WEATHER_API_BASE") or "https://api.open-meteo.com"
+    ).rstrip("/")
+    OPEN_METEO_TIMEOUT_SECONDS = float(os.getenv("OPEN_METEO_TIMEOUT_SECONDS", "8"))
+
     API_TITLE = "Ajali! API"
     API_VERSION = "v1"
     OPENAPI_VERSION = "3.0.3"
@@ -93,7 +102,10 @@ class Config:
                 "(paste department UUIDs from `GET /departments`) → resolve "
                 "(optional `notifyCitizen.email` via Resend).\n"
                 "6. Email test: `POST /api/v1/notifications` with `channel: EMAIL` and "
-                "`toEmail` = your Resend account email.\n\n"
+                "`toEmail` = your Resend account email.\n"
+                "7. Geo/weather (Open-Meteo, same hosts as the frontend): "
+                "`GET /api/v1/geo/search?q=Nairobi`, "
+                "`GET /api/v1/weather/current?lat=-1.2864&lng=36.8172`.\n\n"
                 "Invalid lifecycle transitions return **409**. "
                 "Paginated lists return `{ items, total, limit, offset, hasMore }`."
             )
@@ -134,6 +146,8 @@ class TestingConfig(Config):
     RESEND_API_KEY = ""
     NOTIFICATIONS_EMAIL_ENABLED = True
     NOTIFICATIONS_SMS_ENABLED = False
+    GEOCODE_API_BASE = "https://geocoding-api.open-meteo.com"
+    WEATHER_API_BASE = "https://api.open-meteo.com"
 
 
 class ProductionConfig(Config):

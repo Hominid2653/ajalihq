@@ -26,6 +26,8 @@ Replace the in-memory mock in `frontend/src/data/api.ts` with a **Flask REST API
 | 2026-08-25 | Phase 6 supporting writes: notes/media, handoffs, department CRUD, notification read markers. Next: Phase 7 frontend → Flask. |
 | 2026-08-25 | Pre–Phase 7 backend hardening (audit): PII strip on public feeds, pagination, detail bundle, dashboard SQL, PATCH `/auth/me`, admin users, rate limits, notes DESC. Frontend adapters → `.cursor/rules/frontend-flask-integration.mdc`. |
 | 2026-08-27 | Resend EMAIL dispatch (post-commit); SMS deferred dry-run. Docs: `docs/notifications-providers.md`. |
+| 2026-08-27 | OpenWeather proxies: `GET /api/v1/geo/search|reverse`, `GET /api/v1/weather/current`. Docs: `docs/openweather.md`. |
+| 2026-08-27 | Switched geo/weather proxies to **Open-Meteo** (same bases as frontend `VITE_*`; no API key). |
 
 ## Current baseline
 
@@ -203,6 +205,8 @@ All application routes are versioned under **`/api/v1`**. Auth usage: [`docs/api
 /api/v1/notifications/*  → inbox + read markers
 /api/v1/handoffs/*       → ops handoff updates (or nest under incidents)
 /api/v1/health           → live
+/api/v1/geo/*            → Open-Meteo geocode proxy (same host as frontend)
+/api/v1/weather/*        → Open-Meteo weather proxy (same host as frontend)
 ```
 
 ---

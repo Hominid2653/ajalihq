@@ -47,24 +47,31 @@ class NotificationPageSchema(Schema):
 
 
 class CreateNotificationSchema(Schema):
-    """Admin enqueue — Swagger Try it out uses the example below."""
+    """Admin enqueue — Swagger Try it out uses a realistic EMAIL example."""
 
     incidentId = fields.String(
         load_default=None,
         allow_none=True,
-        metadata={"example": None},
+        metadata={
+            "description": "Optional incident UUID to link the notification.",
+            "example": None,
+        },
     )
     recipientId = fields.String(
         load_default=None,
         allow_none=True,
-        metadata={"example": None},
+        metadata={
+            "description": "Optional user UUID; email/phone may be taken from this user.",
+            "example": None,
+        },
     )
     toEmail = fields.Email(
         load_default=None,
         allow_none=True,
         metadata={
-            "description": "Required for EMAIL when recipient has no email. "
-            "With onboarding@resend.dev, use your Resend account email.",
+            "description": (
+                "Destination for EMAIL. With onboarding@resend.dev, use your Resend login email."
+            ),
             "example": "you@example.com",
         },
     )

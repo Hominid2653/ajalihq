@@ -34,12 +34,30 @@ class NotificationListResource(MethodView):
         )
 
 
+CREATE_NOTIFICATION_EXAMPLE = {
+    "type": "CITIZEN_STATUS_NOTIFY",
+    "channel": "EMAIL",
+    "title": "Ajali! test",
+    "body": "Hello from Ajali backend",
+    "toEmail": "you@example.com",
+    "incidentId": None,
+    "recipientId": None,
+}
+
+
 @blp.route("")
 class NotificationCreateResource(MethodView):
     decorators = [role_required("ADMIN")]
 
-    @blp.doc(security=[{"BearerAuth": []}])
-    @blp.arguments(CreateNotificationSchema)
+    @blp.doc(
+        security=[{"BearerAuth": []}],
+        description=(
+            "Enqueue a notification. For `channel: EMAIL`, set `toEmail` "
+            "(or `recipientId` with a user that has an email). "
+            "Uses Resend after commit; dry-runs if `RESEND_API_KEY` is unset."
+        ),
+    )
+    @blp.arguments(CreateNotificationSchema, example=CREATE_NOTIFICATION_EXAMPLE)
     @blp.response(201, NotificationSchema)
     def post(self, data):
         """Admin enqueue of SMS/EMAIL/IN_APP notification (ops)."""

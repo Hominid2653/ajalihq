@@ -46,6 +46,24 @@ class Config:
         )
     )
 
+    # External notifications (Resend email; Africa's Talking SMS later)
+    RESEND_API_KEY = (os.getenv("RESEND_API_KEY") or "").strip()
+    RESEND_FROM_EMAIL = (
+        os.getenv("RESEND_FROM_EMAIL") or "Ajali! <onboarding@resend.dev>"
+    ).strip()
+    NOTIFICATIONS_EMAIL_ENABLED = (
+        os.getenv("NOTIFICATIONS_EMAIL_ENABLED", "true").strip().lower()
+        not in ("0", "false", "no")
+    )
+    # SMS deferred — keep env hooks for later wiring
+    AT_USERNAME = (os.getenv("AT_USERNAME") or "").strip()
+    AT_API_KEY = (os.getenv("AT_API_KEY") or "").strip()
+    AT_SENDER_ID = (os.getenv("AT_SENDER_ID") or "").strip()
+    NOTIFICATIONS_SMS_ENABLED = (
+        os.getenv("NOTIFICATIONS_SMS_ENABLED", "false").strip().lower()
+        in ("1", "true", "yes")
+    )
+
     API_TITLE = "Ajali! API"
     API_VERSION = "v1"
     OPENAPI_VERSION = "3.0.3"
@@ -99,6 +117,9 @@ class TestingConfig(Config):
     JWT_SECRET_KEY = "test-jwt-secret-key-at-least-32-bytes"
     # In-memory SQLite does not use a real connection pool.
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    RESEND_API_KEY = ""
+    NOTIFICATIONS_EMAIL_ENABLED = True
+    NOTIFICATIONS_SMS_ENABLED = False
 
 
 class ProductionConfig(Config):

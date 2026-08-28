@@ -46,6 +46,33 @@ class Config:
         )
     )
 
+    # External notifications (Resend email; Africa's Talking SMS later)
+    RESEND_API_KEY = (os.getenv("RESEND_API_KEY") or "").strip()
+    RESEND_FROM_EMAIL = (
+        os.getenv("RESEND_FROM_EMAIL") or "Ajali! <onboarding@resend.dev>"
+    ).strip()
+    NOTIFICATIONS_EMAIL_ENABLED = (
+        os.getenv("NOTIFICATIONS_EMAIL_ENABLED", "true").strip().lower()
+        not in ("0", "false", "no")
+    )
+    # SMS deferred — keep env hooks for later wiring
+    AT_USERNAME = (os.getenv("AT_USERNAME") or "").strip()
+    AT_API_KEY = (os.getenv("AT_API_KEY") or "").strip()
+    AT_SENDER_ID = (os.getenv("AT_SENDER_ID") or "").strip()
+    NOTIFICATIONS_SMS_ENABLED = (
+        os.getenv("NOTIFICATIONS_SMS_ENABLED", "false").strip().lower()
+        in ("1", "true", "yes")
+    )
+
+    # Open-Meteo (same public bases as frontend VITE_GEOCODE_API_BASE / VITE_WEATHER_API_BASE)
+    GEOCODE_API_BASE = (
+        os.getenv("GEOCODE_API_BASE") or "https://geocoding-api.open-meteo.com"
+    ).rstrip("/")
+    WEATHER_API_BASE = (
+        os.getenv("WEATHER_API_BASE") or "https://api.open-meteo.com"
+    ).rstrip("/")
+    OPEN_METEO_TIMEOUT_SECONDS = float(os.getenv("OPEN_METEO_TIMEOUT_SECONDS", "8"))
+
     API_TITLE = "Ajali! API"
     API_VERSION = "v1"
     OPENAPI_VERSION = "3.0.3"
@@ -53,18 +80,34 @@ class Config:
     OPENAPI_SWAGGER_UI_PATH = "/docs"
     OPENAPI_SWAGGER_UI_URL = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
     OPENAPI_REDOC_PATH = "/redoc"
+    # Pin a stable release — `redoc@next` on jsDelivr currently 404s (blank ReDoc page).
     OPENAPI_REDOC_URL = (
-        "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
+        "https://cdn.jsdelivr.net/npm/redoc@2.5.0/bundles/redoc.standalone.js"
     )
     API_SPEC_OPTIONS = {
         "info": {
             "description": (
-                "REST API for Ajali! emergency incident reporting. "
-                "All application routes are versioned under `/api/v1`. "
+                "## Ajali! REST API (`/api/v1`)\n\n"
                 "Citizens report incidents; admins review, verify, and coordinate response. "
-                "Only IN_PROGRESS incidents appear on the public active map. "
-                "Authenticate via `POST /api/v1/auth/login`, then click Authorize in Swagger "
-                "and paste the `accessToken` as a Bearer JWT."
+                "Only **IN_PROGRESS** incidents appear on the public active map.\n\n"
+                "### Swagger testing checklist\n\n"
+                "1. **Health** — `GET /api/v1/health` (no auth).\n"
+                "2. **Login** — `POST /api/v1/auth/login` with demo admin "
+                "`brian@ajalihq.test` / `password` (or citizen `amina@ajalihq.test`).\n"
+                "3. Copy `accessToken` → click **Authorize** → paste into **BearerAuth** "
+                "(do not type `Bearer ` yourself).\n"
+                "4. Call protected routes. Path params must be real UUIDs from list/create "
+                "responses — never leave Swagger's placeholder `string`.\n"
+                "5. Lifecycle: create (PENDING) → verify → start-response "
+                "(paste department UUIDs from `GET /departments`) → resolve "
+                "(optional `notifyCitizen.email` via Resend).\n"
+                "6. Email test: `POST /api/v1/notifications` with `channel: EMAIL` and "
+                "`toEmail` = your Resend account email.\n"
+                "7. Geo/weather (Open-Meteo, same hosts as the frontend): "
+                "`GET /api/v1/geo/search?q=Nairobi`, "
+                "`GET /api/v1/weather/current?lat=-1.2864&lng=36.8172`.\n\n"
+                "Invalid lifecycle transitions return **409**. "
+                "Paginated lists return `{ items, total, limit, offset, hasMore }`."
             )
         },
         "servers": [
@@ -81,7 +124,8 @@ class Config:
                     "bearerFormat": "JWT",
                     "description": (
                         "JWT from POST /api/v1/auth/login (`accessToken`). "
-                        "Paste the raw token only — Swagger adds the Bearer prefix."
+                        "Paste the raw token only — Swagger adds the Bearer prefix. "
+                        "Demo: brian@ajalihq.test / password"
                     ),
                 }
             }
@@ -99,6 +143,11 @@ class TestingConfig(Config):
     JWT_SECRET_KEY = "test-jwt-secret-key-at-least-32-bytes"
     # In-memory SQLite does not use a real connection pool.
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    RESEND_API_KEY = ""
+    NOTIFICATIONS_EMAIL_ENABLED = True
+    NOTIFICATIONS_SMS_ENABLED = False
+    GEOCODE_API_BASE = "https://geocoding-api.open-meteo.com"
+    WEATHER_API_BASE = "https://api.open-meteo.com"
 
 
 class ProductionConfig(Config):

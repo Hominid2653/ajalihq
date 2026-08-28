@@ -220,11 +220,15 @@ def test_notes_media_handoff_department_notifications(client, app):
         headers=admin,
         json={
             "type": "CITIZEN_STATUS_NOTIFY",
-            "channel": "SMS",
-            "title": "Ops SMS",
-            "body": "Queued for Africa's Talking",
+            "channel": "EMAIL",
+            "title": "Ops email",
+            "body": "Test Resend dispatch",
+            "toEmail": "ops-test@example.com",
             "incidentId": ids["incident_id"],
         },
     )
     assert created_notif.status_code == 201, created_notif.get_json()
-    assert created_notif.get_json()["channel"] == "SMS"
+    body = created_notif.get_json()
+    assert body["channel"] == "EMAIL"
+    # TESTING has no RESEND_API_KEY → dry_run
+    assert body.get("deliveryStatus") == "dry_run"

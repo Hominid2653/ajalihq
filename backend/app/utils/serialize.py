@@ -168,7 +168,7 @@ def handoff_to_dict(row: IncidentDepartmentHandoff) -> dict[str, Any]:
 
 
 def notification_to_dict(row: Notification) -> dict[str, Any]:
-    return {
+    data: dict[str, Any] = {
         "id": str(row.id),
         "incidentId": _str_id(row.incident_id),
         "type": row.type_code,
@@ -178,6 +178,12 @@ def notification_to_dict(row: Notification) -> dict[str, Any]:
         "read": row.read,
         "createdAt": _iso(row.created_at),
     }
+    if row.metadata_:
+        data["metadata"] = row.metadata_
+        status = row.metadata_.get("deliveryStatus")
+        if status:
+            data["deliveryStatus"] = status
+    return data
 
 
 def audit_to_dict(row: AuditLog) -> dict[str, Any]:

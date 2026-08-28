@@ -108,19 +108,22 @@ def _add_notification(
     now: datetime,
     channel: str = "IN_APP",
     recipient_id: UUID | None = None,
-) -> None:
-    db.session.add(
-        Notification(
-            recipient_id=recipient_id,
-            incident_id=incident.id,
-            type_code=type_code,
-            channel_code=channel,
-            title=title,
-            body=body,
-            read=False,
-            created_at=now,
-        )
+    metadata: dict[str, Any] | None = None,
+) -> Notification:
+    row = Notification(
+        recipient_id=recipient_id,
+        incident_id=incident.id,
+        type_code=type_code,
+        channel_code=channel,
+        title=title,
+        body=body,
+        read=False,
+        created_at=now,
+        metadata_=metadata,
     )
+    db.session.add(row)
+    db.session.flush()
+    return row
 
 
 def verify_incident(incident_id: str, data: dict[str, Any], actor: User) -> dict[str, Any]:
@@ -258,6 +261,7 @@ def start_response(incident_id: str, data: dict[str, Any], actor: User) -> dict[
     from_status = incident.status_code
     notes = (data.get("notes") or "").strip() or None
     parsed_ids: list[UUID] = []
+    dispatch_ids: list[UUID] = []
 
     for raw_id in department_ids:
         try:
@@ -305,14 +309,19 @@ def start_response(incident_id: str, data: dict[str, Any], actor: User) -> dict[
             now=now,
             metadata={"handoffId": str(handoff.id), "departmentId": str(dept_id)},
         )
-        _add_notification(
+        dept_note = _add_notification(
             incident,
             type_code="DEPARTMENT_ASSIGNED",
             title="Department assigned",
             body=f"{department.name} assigned to {incident.reference}.",
             now=now,
             channel="EMAIL",
+            metadata={
+                "deliveryStatus": "pending",
+                "note": "No department email configured; dispatch will skip",
+            },
         )
+        dispatch_ids.append(dept_note.id)
 
     incident.status_code = "IN_PROGRESS"
     incident.updated_at = now
@@ -342,6 +351,10 @@ def start_response(incident_id: str, data: dict[str, Any], actor: User) -> dict[
         now=now,
     )
     db.session.commit()
+    if dispatch_ids:
+        from app.services.notification_dispatch import dispatch_notifications
+
+        dispatch_notifications(dispatch_ids)
     return incident_to_dict(incident)
 
 
@@ -428,16 +441,22 @@ def resolve_incident(incident_id: str, data: dict[str, Any], actor: User) -> dic
     if notify_email:
         channels.append(("EMAIL", incident.reporter_email or "no email on file"))
 
+    dispatch_ids: list[UUID] = []
     for channel, destination in channels:
-        _add_notification(
+        note = _add_notification(
             incident,
             type_code="CITIZEN_STATUS_NOTIFY",
             title=f"Citizen notified ({channel})",
-            body=f"Queued {channel} to {destination}: {citizen_body}",
+            body=citizen_body,
             now=now,
             channel=channel,
             recipient_id=incident.reporter_id,
+            metadata={
+                "destination": destination,
+                "deliveryStatus": "pending",
+            },
         )
+        dispatch_ids.append(note.id)
         _add_audit(
             incident,
             actor=actor,
@@ -450,6 +469,10 @@ def resolve_incident(incident_id: str, data: dict[str, Any], actor: User) -> dic
         )
 
     db.session.commit()
+    if dispatch_ids:
+        from app.services.notification_dispatch import dispatch_notifications
+
+        dispatch_notifications(dispatch_ids)
     return incident_to_dict(incident)
 
 

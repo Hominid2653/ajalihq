@@ -62,7 +62,13 @@ Pass `limit` / `offset` from inbox/tables; default page size 50 (max 200).
 ## Realtime / Phase 8 (do not block Phase 7)
 
 - No WebSocket/SSE/Realtime yet. Ship refetch-on-mutation + optional short polling for the notification badge.
-- Geocode / weather stay browser → Open-Meteo until Flask proxies exist.
+- Geocode / weather: Flask proxies use the **same Open-Meteo bases** as the frontend
+  (`GEOCODE_API_BASE` / `WEATHER_API_BASE` ≡ `VITE_GEOCODE_API_BASE` / `VITE_WEATHER_API_BASE`):
+  - `GET /api/v1/geo/search?q=`
+  - `GET /api/v1/geo/reverse?lat=&lng=` (coordinate label; Open-Meteo has no reverse)
+  - `GET /api/v1/weather/current?lat=&lng=`
+  Point the React services at these routes when cutting over; no vendor API key.
+  See `docs/openweather.md`.
 - Media: stop uploading huge data URLs once Supabase Storage is wired; API currently accepts URL strings only.
 
 ## Smoke checklist after wiring

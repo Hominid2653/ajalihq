@@ -22,20 +22,11 @@ python -m scripts.seed_demo_users
 ## Get a token (Swagger UI)
 
 1. Start the API: `flask run --host 127.0.0.1 --port 5000`
-2. Open [http://127.0.0.1:5000/docs](http://127.0.0.1:5000/docs)
-3. Expand **Auth** → `POST /api/v1/auth/login`
-4. Click **Try it out**, body example:
-
-```json
-{
-  "email": "brian@ajalihq.test",
-  "password": "password"
-}
-```
-
-5. Execute. Copy `accessToken` from the response (not the whole JSON).
-6. Click **Authorize** (top of Swagger), paste the token into **BearerAuth**, confirm.
-7. Call protected routes (e.g. `GET /api/v1/auth/me`). Swagger sends `Authorization: Bearer …` automatically.
+2. Open [http://127.0.0.1:5000/docs](http://127.0.0.1:5000/docs) — the top **info** panel has a full testing checklist.
+3. Expand **Auth** → `POST /api/v1/auth/login` (Try it out body is prefilled for Brian).
+4. Execute. Copy `accessToken` from the response (not the whole JSON).
+5. Click **Authorize** (top of Swagger), paste the token into **BearerAuth**, confirm.
+6. Call protected routes. Replace path `string` placeholders with real UUIDs from list/create responses.
 
 ## Get a token (curl / PowerShell)
 
@@ -124,6 +115,16 @@ Each lifecycle write is one DB transaction: incident update + status history + a
 | `POST` | `/api/v1/departments/{id}/deactivate` | ADMIN |
 | `POST` | `/api/v1/notifications/{id}/read` | Bearer |
 | `POST` | `/api/v1/notifications/read-all` | Bearer |
+
+## Open-Meteo proxies (public)
+
+Same hosts as the frontend (`GEOCODE_API_BASE` / `WEATHER_API_BASE`). No API key. See [`docs/openweather.md`](openweather.md).
+
+| Method | Path | Auth |
+| --- | --- | --- |
+| `GET` | `/api/v1/geo/search?q=` | None |
+| `GET` | `/api/v1/geo/reverse?lat=&lng=` | None |
+| `GET` | `/api/v1/weather/current?lat=&lng=` | None |
 
 ## API versioning
 

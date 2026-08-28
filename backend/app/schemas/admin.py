@@ -33,12 +33,24 @@ class AuditLogSchema(Schema):
 
 
 class PaginationQuerySchema(Schema):
-    limit = fields.Integer(load_default=50)
-    offset = fields.Integer(load_default=0)
+    limit = fields.Integer(
+        load_default=50,
+        metadata={"description": "Page size (1–200).", "example": 50},
+    )
+    offset = fields.Integer(
+        load_default=0,
+        metadata={"description": "Rows to skip.", "example": 0},
+    )
 
 
 class AuditLogQuerySchema(PaginationQuerySchema):
-    incidentId = fields.String(load_default=None)
+    incidentId = fields.String(
+        load_default=None,
+        metadata={
+            "description": "Optional filter — paste an incident UUID.",
+            "example": None,
+        },
+    )
 
 
 class PageMetaSchema(Schema):

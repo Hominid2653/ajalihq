@@ -110,12 +110,6 @@ class Config:
                 "Paginated lists return `{ items, total, limit, offset, hasMore }`."
             )
         },
-        "servers": [
-            {
-                "url": os.getenv("API_SERVER_URL", "http://127.0.0.1:5000"),
-                "description": "Local development",
-            }
-        ],
         "components": {
             "securitySchemes": {
                 "BearerAuth": {
@@ -131,6 +125,13 @@ class Config:
             }
         },
     }
+
+    _server_url = (os.getenv("API_SERVER_URL") or "").strip().rstrip(",/")
+    if _server_url and _server_url.startswith(("http://", "https://")):
+        API_SPEC_OPTIONS["servers"] = [
+            {"url": _server_url, "description": "API Server"}
+        ]
+
 
 
 class DevelopmentConfig(Config):

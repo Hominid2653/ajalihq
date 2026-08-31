@@ -657,6 +657,45 @@ def add_media(
     return media_to_dict(media)
 
 
+def upload_incident_media(
+    incident_id: str, file_storage: Any, actor: User
+) -> dict[str, Any]:
+    from app.services.storage_service import process_media_upload
+
+    incident = get_incident_or_404(incident_id)
+    ensure_can_edit_incident(incident, actor)
+
+    upload_info = process_media_upload(file_storage, str(incident.id))
+    now = _utcnow()
+    media = IncidentMedia(
+        incident_id=incident.id,
+        kind_code=upload_info["kind"],
+        url=upload_info["url"],
+        name=upload_info["name"],
+        storage_key=upload_info["storage_key"],
+        mime_type=upload_info["mime_type"],
+        byte_size=upload_info["byte_size"],
+        uploaded_by_id=actor.id,
+        created_at=now,
+    )
+    db.session.add(media)
+    db.session.add(
+        AuditLog(
+            incident_id=incident.id,
+            incident_reference=incident.reference,
+            entity_type="incident",
+            entity_id=incident.id,
+            actor_id=actor.id,
+            actor_name=actor.name,
+            action_code="MEDIA_ADDED",
+            new_value=media.name,
+            created_at=now,
+        )
+    )
+    db.session.commit()
+    return media_to_dict(media)
+
+
 def remove_media(media_id: str, actor: User) -> bool:
     try:
         uid = UUID(media_id)

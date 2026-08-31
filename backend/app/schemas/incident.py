@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate
+from marshmallow import Schema, fields, pre_load, validate
 
 
 INCIDENT_TYPES = ["accident", "fire", "medical", "crime", "disaster"]
@@ -117,6 +117,9 @@ class MediaSchema(Schema):
     kind = fields.String(required=True)
     url = fields.String(required=True)
     name = fields.String(required=True)
+    storageKey = fields.String(allow_none=True)
+    mimeType = fields.String(allow_none=True)
+    byteSize = fields.Integer(allow_none=True)
     createdAt = fields.String(required=True)
 
 
@@ -178,7 +181,6 @@ class MediaInputSchema(Schema):
     )
     url = fields.String(
         required=True,
-        validate=validate.Length(min=1, max=2000),
         metadata={"example": "https://placehold.co/600x400/png"},
     )
     name = fields.String(
@@ -189,6 +191,21 @@ class MediaInputSchema(Schema):
 
 
 class CreateIncidentSchema(Schema):
+    @pre_load
+    def sanitize_inputs(self, data, **kwargs):
+        if not isinstance(data, dict):
+            return data
+        data = dict(data)
+        for field in ("reporterEmail", "reporterPhone", "reporterName", "userId", "location"):
+            if field in data and isinstance(data[field], str) and not data[field].strip():
+                if field == "location":
+                    continue
+                data[field] = None
+        for num_field in ("lat", "lng"):
+            if num_field in data and (data[num_field] == "" or data[num_field] is None):
+                data[num_field] = None
+        return data
+
     title = fields.String(
         required=True,
         validate=validate.Length(min=1, max=300),
@@ -245,6 +262,19 @@ class CreateIncidentSchema(Schema):
 
 class UpdateIncidentSchema(Schema):
     """Partial update — only fields present in the request body are applied. Status is not changed here."""
+
+    @pre_load
+    def sanitize_inputs(self, data, **kwargs):
+        if not isinstance(data, dict):
+            return data
+        data = dict(data)
+        for field in ("reporterEmail", "reporterPhone", "reporterName", "userId"):
+            if field in data and isinstance(data[field], str) and not data[field].strip():
+                data[field] = None
+        for num_field in ("lat", "lng"):
+            if num_field in data and (data[num_field] == "" or data[num_field] is None):
+                data[num_field] = None
+        return data
 
     title = fields.String(
         validate=validate.Length(min=1, max=300),

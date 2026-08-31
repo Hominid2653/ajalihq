@@ -30,6 +30,7 @@ import {
 } from "@/data/api"
 import { env } from "@/lib/env"
 import { apiClient, ApiError, type PaginatedEnvelope } from "@/lib/http-client"
+import { mediaApi } from "@/services/media-api"
 import type {
   Incident,
   IncidentListItem,
@@ -107,7 +108,49 @@ export const incidentApi = {
 
   async create(data: CreateIncidentInput, actor?: Actor): Promise<Incident> {
     if (!env.useMockApi) {
-      return apiClient.post<Incident>("/api/v1/incidents", data)
+      // 1. Separate initial URL media from raw file attachments
+      const urlMedia = (data.media || [])
+        .filter((m) => m.url && !m.url.startsWith("data:") && !m.url.startsWith("blob:"))
+        .map((m) => ({ kind: m.kind, url: m.url, name: m.name }))
+
+      const payload = {
+        title: data.title,
+        description: data.description,
+        type: data.type,
+        urgency: data.urgency,
+        severity: data.severity,
+        location: data.location,
+        lat: data.lat == null || Number.isNaN(Number(data.lat)) ? null : Number(data.lat),
+        lng: data.lng == null || Number.isNaN(Number(data.lng)) ? null : Number(data.lng),
+        userId: data.userId,
+        reporterName: data.reporterName,
+        reporterEmail: data.reporterEmail?.trim() || undefined,
+        reporterPhone: data.reporterPhone?.trim() || undefined,
+        preferredContactMethod: data.preferredContactMethod,
+        media: urlMedia.length > 0 ? urlMedia : undefined,
+      }
+
+      const created = await apiClient.post<Incident>("/api/v1/incidents", payload)
+
+      // 2. Upload any attached files directly to Supabase Storage endpoint
+      const fileItems = (data.media || []).filter(
+        (m): m is typeof m & { file: File } => Boolean("file" in m && m.file instanceof File)
+      )
+      if (fileItems.length > 0) {
+        const currentActor = actor ?? {
+          id: created.userId || data.userId,
+          name: created.reporterName || data.reporterName || "Reporter",
+        }
+        for (const item of fileItems) {
+          try {
+            await mediaApi.upload(created.id, { file: item.file }, currentActor)
+          } catch (uploadErr) {
+            console.warn("Media file upload failed:", uploadErr)
+          }
+        }
+      }
+
+      return created
     }
     if (!actor) throw new Error("Actor is required for mock creation")
     return apiCreateIncident(data, actor)
@@ -252,8 +295,8 @@ export const incidentApi = {
       try {
         return await apiClient.get<ReporterVerification>(`/api/v1/incidents/${incidentId}/verification`)
       } catch (err) {
-        if (err instanceof ApiError && err.status === 404) return null
-        throw err
+        if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return null
+        return null
       }
     }
     return apiGetVerification(incidentId)

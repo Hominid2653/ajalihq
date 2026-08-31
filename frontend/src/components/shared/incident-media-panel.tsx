@@ -3,6 +3,7 @@ import { ImagePlus, Trash2, Video } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { env } from "@/lib/env"
 import { mediaApi } from "@/services/media-api"
 import type { Actor } from "@/services/incident-api"
 import type { IncidentMedia } from "@/types/incident"
@@ -143,11 +144,28 @@ function IncidentMediaPanel({
             <li key={item.id} className="overflow-hidden rounded-xl border bg-background">
               <div className="relative aspect-video bg-muted">
                 {item.kind === "image" ? (
-                  <img src={item.url} alt={item.name} className="size-full object-cover" />
+                  <img
+                    src={
+                      item.url.startsWith("/") && !item.url.startsWith("//")
+                        ? `${env.apiBase || ""}${item.url}`
+                        : item.url
+                    }
+                    alt={item.name}
+                    className="size-full object-cover"
+                  />
                 ) : (
                   <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
                     <Video className="size-8" />
-                    <a href={item.url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
+                    <a
+                      href={
+                        item.url.startsWith("/") && !item.url.startsWith("//")
+                          ? `${env.apiBase || ""}${item.url}`
+                          : item.url
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-primary underline"
+                    >
                       Open video
                     </a>
                   </div>

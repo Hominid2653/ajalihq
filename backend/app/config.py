@@ -64,6 +64,18 @@ class Config:
         in ("1", "true", "yes")
     )
 
+    # Supabase Storage for incident media
+    SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").strip().rstrip("/")
+    SUPABASE_KEY = (
+        os.getenv("SUPABASE_KEY")
+        or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_ANON_KEY")
+        or ""
+    ).strip()
+    SUPABASE_STORAGE_BUCKET = (
+        os.getenv("SUPABASE_STORAGE_BUCKET") or "incident-media"
+    ).strip()
+
     # Open-Meteo (same public bases as frontend VITE_GEOCODE_API_BASE / VITE_WEATHER_API_BASE)
     GEOCODE_API_BASE = (
         os.getenv("GEOCODE_API_BASE") or "https://geocoding-api.open-meteo.com"
@@ -147,6 +159,8 @@ class TestingConfig(Config):
     RESEND_API_KEY = ""
     NOTIFICATIONS_EMAIL_ENABLED = True
     NOTIFICATIONS_SMS_ENABLED = False
+    SUPABASE_URL = ""
+    SUPABASE_KEY = ""
     GEOCODE_API_BASE = "https://geocoding-api.open-meteo.com"
     WEATHER_API_BASE = "https://api.open-meteo.com"
 

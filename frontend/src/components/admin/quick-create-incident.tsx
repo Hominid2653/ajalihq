@@ -22,26 +22,8 @@ import {
 import { useAdminActor } from "@/hooks/use-admin-actor"
 import { typeLabel } from "@/types/incident"
 import { incidentApi } from "@/services/incident-api"
-import { toDurableMediaUrl } from "@/services/media-api"
+import { toDurableMediaItems } from "@/services/media-api"
 import type { Incident } from "@/types/incident"
-
-async function durableDraftMedia(items: PendingMedia[]) {
-  return Promise.all(
-    items.map(async (item) => {
-      if (item.file) {
-        const url = await toDurableMediaUrl(item.file)
-        return { kind: item.kind, url, name: item.name }
-      }
-      // Sanitize blob URLs via the same contract as mediaApi.add
-      const url = item.url.startsWith("blob:")
-        ? item.kind === "video"
-          ? "/icons.svg"
-          : "/splash.png"
-        : item.url
-      return { kind: item.kind, url, name: item.name }
-    })
-  )
-}
 
 function QuickCreateIncidentButton({
   onCreated,
@@ -72,7 +54,7 @@ function QuickCreateIncidentButton({
       const title =
         values.title.trim() ||
         `${typeLabel(values.type)} - ${values.location.trim() || "Reported incident"}`
-      const media = await durableDraftMedia(draftMedia)
+      const media = await toDurableMediaItems(draftMedia)
       const incident = await incidentApi.create(
         {
           type: values.type,

@@ -36,7 +36,7 @@ class GeocodeSearchResource(MethodView):
     )
     @blp.arguments(GeocodeSearchQuerySchema, location="query")
     @blp.response(200, GeocodePlaceSchema(many=True))
-    @rate_limit(limit=60, window_seconds=60)
+    @rate_limit(limit=300, window_seconds=60)
     def get(self, query_args):
         """Search Kenyan places by name."""
         return geocode_service.search_places(
@@ -54,7 +54,7 @@ class GeocodeReverseResource(MethodView):
     )
     @blp.arguments(ReverseGeocodeQuerySchema, location="query")
     @blp.response(200, GeocodePlaceSchema(many=True))
-    @rate_limit(limit=60, window_seconds=60)
+    @rate_limit(limit=300, window_seconds=60)
     def get(self, query_args):
         """Reverse geocode coordinates (label fallback)."""
         return geocode_service.reverse_geocode(
@@ -75,7 +75,7 @@ class WeatherCurrentResource(MethodView):
     )
     @blp.arguments(WeatherCurrentQuerySchema, location="query")
     @blp.response(200, SiteConditionsSchema)
-    @rate_limit(limit=60, window_seconds=60)
+    @rate_limit(limit=300, window_seconds=60)
     def get(self, query_args):
         """Current weather for coordinates."""
         return weather_service.get_current_conditions(

@@ -34,6 +34,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
+        "pool_recycle": 280,
         "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
         "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
         "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),

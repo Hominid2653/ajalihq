@@ -12,6 +12,7 @@ import {
   LogOut,
   Map,
   ScrollText,
+  Server,
   Shield,
 } from "lucide-react"
 import { QuickCreateIncidentButton } from "@/components/admin/quick-create-incident"
@@ -50,6 +51,7 @@ const tabs = [
   { to: "/admin/departments", label: "Departments", icon: Building2 },
   { to: "/admin/notifications", label: "Alerts", icon: Bell },
   { to: "/admin/audit-log", label: "Audit", icon: ScrollText },
+  { to: "/admin/server-connection", label: "Server connection", icon: Server },
 ]
 
 /** Primary tabs shown in the mobile bottom bar (create via Add report modal) */
@@ -64,6 +66,7 @@ const mobileMore = [
   { to: "/admin/departments", label: "Departments", icon: Building2 },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/audit-log", label: "Audit log", icon: ScrollText },
+  { to: "/admin/server-connection", label: "Server connection", icon: Server },
 ]
 
 type AdminShellProps = {

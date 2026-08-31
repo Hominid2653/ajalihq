@@ -17,6 +17,7 @@ import { AdminIncidentReviewPage } from "@/pages/admin/AdminIncidentReviewPage"
 import { AdminIncidentsPage } from "@/pages/admin/AdminIncidentsPage"
 import { AdminMapPage } from "@/pages/admin/AdminMapPage"
 import { AdminNotificationsPage } from "@/pages/admin/AdminNotificationsPage"
+import { AdminServerTestPage } from "@/pages/admin/AdminServerTestPage"
 import { ComingSoonPage } from "@/pages/public/ComingSoonPage"
 import { HomePage } from "@/pages/public/HomePage"
 import { LandingPage } from "@/pages/public/LandingPage"
@@ -214,6 +215,23 @@ function App() {
           element={
             <ProtectedRoute roles={[ROLES.ADMIN]}>
               <AdminAuditLogPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/server-connection"
+          element={
+            <ProtectedRoute roles={[ROLES.ADMIN]}>
+              <AdminServerTestPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Shortcut test route */}
+        <Route
+          path="/test"
+          element={
+            <ProtectedRoute roles={[ROLES.ADMIN]}>
+              <AdminServerTestPage />
             </ProtectedRoute>
           }
         />

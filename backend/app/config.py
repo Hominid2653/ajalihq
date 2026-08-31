@@ -42,7 +42,7 @@ class Config:
     CORS_ORIGINS = _split_origins(
         os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:5173,http://127.0.0.1:5173",
+            "http://localhost:5173,http://127.0.0.1:5173,https://ajalihq.vercel.app,https://ajali.vercel.app",
         )
     )
 

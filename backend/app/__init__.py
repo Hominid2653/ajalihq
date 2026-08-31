@@ -21,7 +21,7 @@ def create_app(config_name: str | None = None) -> Flask:
     jwt.init_app(app)
     cors.init_app(
         app,
-        resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}},
+        resources={r"/*": {"origins": app.config["CORS_ORIGINS"]}},
         supports_credentials=True,
     )
     rest_api.init_app(app)

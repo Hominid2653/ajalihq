@@ -67,6 +67,7 @@ function SignUpPage() {
       const user = await registerUser({
         name,
         email,
+        password,
         phone,
         avatarUrl: avatarUrl || undefined,
         idNumber: idNumber.trim() || undefined,

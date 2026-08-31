@@ -33,12 +33,14 @@ function SignInPage() {
       }
       const user = await authenticate(email, password)
       if (!user) {
-        setError("No account found for that email.")
+        setError("Invalid email or password.")
         return
       }
       signIn(dispatch, user)
       const target = from ?? defaultHomeForRole(user.role)
       navigate(target, { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not sign in.")
     } finally {
       setPending(false)
     }

@@ -66,7 +66,9 @@ function AdminNotificationsPage() {
   async function markRead(id: string) {
     try {
       const updated = await notificationApi.markAsRead(id)
-      setItems((current) => current.map((item) => (item.id === id ? updated : item)))
+      if (updated) {
+        setItems((current) => current.map((item) => (item.id === id ? updated : item)))
+      }
       notifyShellBadgeRefresh()
     } catch {
       toast.error("Could not mark notification as read.")

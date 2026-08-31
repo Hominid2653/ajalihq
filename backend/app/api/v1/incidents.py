@@ -325,13 +325,71 @@ class IncidentMediaResource(MethodView):
     @jwt_required()
     @blp.doc(
         security=[{"BearerAuth": []}],
-        description="Attach media by URL (Storage upload comes later).",
+        description="Attach media by URL.",
     )
     @blp.arguments(AddMediaSchema, example=ADD_MEDIA)
     @blp.response(201, MediaSchema)
     def post(self, data, incident_id):
         """Add media."""
         return incident_service.add_media(incident_id, data, get_current_user())
+
+
+@blp.route("/<incident_id>/media/upload")
+class IncidentMediaUploadResource(MethodView):
+    @jwt_required()
+    @blp.doc(
+        security=[{"BearerAuth": []}],
+        description="Upload media file (multipart/form-data with 'file') to Supabase Storage and attach to incident.",
+    )
+    @blp.response(201, MediaSchema)
+    def post(self, incident_id):
+        """Upload and attach media file."""
+        from flask import request
+        from flask_smorest import abort
+
+        if "file" not in request.files:
+            abort(422, message="No file provided in form-data ('file' field required).")
+
+        file_obj = request.files["file"]
+        return incident_service.upload_incident_media(
+            incident_id, file_obj, get_current_user()
+        )
+
+
+@blp.route("/media/file/<incident_id>/<path:filename>")
+class IncidentMediaFileResource(MethodView):
+    @blp.doc(
+        security=[],
+        description="Serves locally saved media file for development mode preview.",
+    )
+    def get(self, incident_id, filename):
+        """Serve media file."""
+        import os
+        from flask import current_app, send_from_directory
+
+        uploads_dir = os.path.join(current_app.instance_path, "uploads", incident_id)
+        return send_from_directory(uploads_dir, filename)
+
+
+@blp.route("/<incident_id>/media/placeholder/<path:filename>")
+class IncidentMediaPlaceholderResource(MethodView):
+    @blp.doc(
+        security=[],
+        description="Serves local SVG placeholder when Supabase Storage is not configured.",
+    )
+    def get(self, incident_id, filename):
+        """Serve media placeholder."""
+        from flask import Response
+
+        svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <rect width="600" height="400" fill="#1e293b"/>
+  <rect x="20" y="20" width="560" height="360" rx="12" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+  <circle cx="300" cy="170" r="50" fill="#22c55e" fill-opacity="0.2"/>
+  <path d="M280 170h40M300 150v40" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+  <text x="300" y="250" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#e2e8f0" text-anchor="middle">Attached: {filename}</text>
+  <text x="300" y="280" font-family="system-ui, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">Supabase Storage ready</text>
+</svg>"""
+        return Response(svg, mimetype="image/svg+xml")
 
 
 @blp.route("/media/<media_id>")

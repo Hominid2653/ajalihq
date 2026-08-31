@@ -119,6 +119,9 @@ def media_to_dict(row: IncidentMedia) -> dict[str, Any]:
         "kind": row.kind_code,
         "url": row.url,
         "name": row.name,
+        "storageKey": row.storage_key,
+        "mimeType": row.mime_type,
+        "byteSize": row.byte_size,
         "createdAt": _iso(row.created_at),
     }
 

@@ -13,8 +13,8 @@ function resolveApiBase(): string {
   if (typeof custom === "string" && custom.trim()) {
     return custom.trim().replace(/\/+$/, "")
   }
-  // In development, default to local Flask port 5000; in production, default to relative "/"
-  return import.meta.env.DEV ? "http://127.0.0.1:5000" : ""
+  // In development, default to local Flask port 5000; in production, default to Render live backend
+  return import.meta.env.DEV ? "http://127.0.0.1:5000" : "https://ajalihq.onrender.com"
 }
 
 export const env = {

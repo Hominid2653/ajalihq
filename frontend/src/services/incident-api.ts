@@ -293,7 +293,8 @@ export const incidentApi = {
   async getVerification(incidentId: string): Promise<ReporterVerification | null> {
     if (!env.useMockApi) {
       try {
-        return await apiClient.get<ReporterVerification>(`/api/v1/incidents/${incidentId}/verification`)
+        const list = await apiClient.get<ReporterVerification[]>(`/api/v1/incidents/${incidentId}/verifications`)
+        return list && list.length > 0 ? list[0] : null
       } catch (err) {
         if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return null
         return null

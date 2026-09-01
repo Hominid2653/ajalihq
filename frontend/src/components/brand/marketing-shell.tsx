@@ -173,8 +173,7 @@ function MarketingShell({ children }: MarketingShellProps) {
           <div className="space-y-2">
             <p className="text-base font-semibold">Ajali!</p>
             <p className="max-w-xs text-sm leading-6 text-muted-foreground">
-              See it. Report it. Respond to it. A simple way to report
-              emergencies and help your community get help faster.
+              Coordinated emergency incident reporting and response for Kenya.
             </p>
           </div>
           {FOOTER_COLUMNS.map((column) => (

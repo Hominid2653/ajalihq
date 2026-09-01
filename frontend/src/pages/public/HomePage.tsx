@@ -1,7 +1,16 @@
 import { useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
+import {
+  faClock,
+  faLocationDot,
+  faMapLocationDot,
+  faShieldHalved,
+  faUsers,
+} from "@fortawesome/free-solid-svg-icons"
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core"
 
 import { MarketingShell } from "@/components/brand/marketing-shell"
+import { HeroMapShowcase } from "@/components/public/hero-map-showcase"
 import {
   Accordion,
   AccordionContent,
@@ -9,69 +18,71 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
+import { FaIcon } from "@/components/ui/fa-icon"
 
 const HOW_IT_WORKS_STEPS = [
   {
-    title: "Create your account",
-    body: "Open Ajali! and tap Sign up. Enter your name, phone number, and email. Choose a password you can remember.",
+    title: "Register your account",
+    body: "Create an account with your name, phone number, and email to access reporting and status tracking.",
   },
   {
     title: "Sign in",
-    body: "Use your email and password to sign in. You only need to do this once on your phone if you stay signed in.",
+    body: "Authenticate with your registered credentials. Sessions remain active on trusted devices.",
   },
   {
-    title: "Tap Report",
-    body: "When you see an emergency, open the app and tap Report. You do not need to know any special codes.",
+    title: "Submit a report",
+    body: "From the dashboard, open Report to file a new incident when an emergency occurs.",
   },
   {
-    title: "Tell us what happened",
-    body: "Choose the type of emergency, write a short description, and mark the place on the map. You can also type the place name.",
+    title: "Provide incident details",
+    body: "Specify the incident type, description, and location on the map or by place name.",
   },
   {
-    title: "Add a photo if you can",
-    body: "If it is safe, add a clear photo of the scene. Photos help responders understand the situation faster.",
+    title: "Attach evidence",
+    body: "When safe to do so, upload photos or video to support verification and response planning.",
   },
   {
-    title: "Submit and wait for updates",
-    body: "Tap Submit. A response team can review your report. You can check the status in your reports list.",
+    title: "Track review status",
+    body: "Submitted reports enter the review queue. Status updates are available in your incident list.",
   },
 ] as const
 
-const PREVIEW_ROWS = [
-  {
-    id: "AJL-0024",
-    type: "Traffic collision",
-    place: "Uhuru Highway, Nairobi",
-    status: "Pending",
-  },
-  {
-    id: "AJL-0021",
-    type: "Fire",
-    place: "Kisumu CBD",
-    status: "In progress",
-  },
-  {
-    id: "AJL-0018",
-    type: "Medical emergency",
-    place: "Nyali, Mombasa",
-    status: "Verified",
-  },
-  {
-    id: "AJL-0014",
-    type: "Flooding",
-    place: "Nakuru town",
-    status: "Resolved",
-  },
+const HERO_STATS = [
+  { label: "Time to submit", value: "< 2 min", icon: faClock },
+  { label: "Cities covered", value: "5+", icon: faLocationDot },
+  { label: "Operations coverage", value: "24/7", icon: faMapLocationDot },
 ] as const
+
+const FLOW_STEPS: {
+  title: string
+  body: string
+  icon: IconDefinition
+}[] = [
+  {
+    title: "Citizens report",
+    body: "Location, description, and evidence submitted from the scene.",
+    icon: faUsers,
+  },
+  {
+    title: "Operations review",
+    body: "Verify reports, initiate response, resolve incidents, or close invalid cases.",
+    icon: faShieldHalved,
+  },
+  {
+    title: "Live public map",
+    body: "Active response incidents are published to the community operations map.",
+    icon: faMapLocationDot,
+  },
+]
 
 const AUDIENCE = [
   {
     title: "For the public",
-    body: "Report what you see with a place, a short description, and a photo if it is safe. Track the status of your own reports without calling around for updates.",
+    body: "Submit structured incident reports with location, context, and supporting media. Monitor the status of your submissions through a single account.",
   },
   {
     title: "For operations",
-    body: "Review incoming reports, verify what is real, start a response, and close false or duplicate cases. The same record moves from first report to resolution.",
+    body: "Review incoming reports, verify legitimacy, coordinate department handoffs, and maintain a complete audit trail from intake to resolution.",
   },
 ] as const
 
@@ -89,86 +100,67 @@ function HomePage() {
 
   return (
     <MarketingShell>
-      <section className="border-b border-border">
-        <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-center lg:py-24">
+      <section className="border-b border-border bg-[var(--ajali-surface-muted)]">
+        <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-14 lg:py-20">
           <div className="max-w-xl space-y-6">
-            <p className="text-sm font-medium text-muted-foreground">
-              Community emergency reporting for Kenya
+            <p className="text-sm font-medium text-[var(--ajali-primary)]">
+              Emergency incident reporting for Kenya
             </p>
             <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
               See it. Report it. Respond to it.
             </h1>
             <p className="text-base leading-7 text-muted-foreground sm:text-lg">
-              Ajali! is a simple app for reporting accidents, fires, medical
-              emergencies, and other incidents near you. Built so anyone can
-              use it, even if you are not used to technology.
+              Ajali! is a coordinated emergency reporting platform. Citizens
+              file incidents with location, context, and evidence; operations
+              teams verify, dispatch response, and maintain a live public map.
             </p>
+
+            <ul className="grid gap-3 sm:grid-cols-3">
+              {HERO_STATS.map((stat) => (
+                <li
+                  key={stat.label}
+                  className="rounded-md border border-border bg-background px-3 py-2.5"
+                >
+                  <FaIcon
+                    icon={stat.icon}
+                    className="mb-1.5 text-sm text-[var(--ajali-primary)]"
+                  />
+                  <p className="text-lg font-semibold tabular-nums">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </li>
+              ))}
+            </ul>
+
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-11 font-semibold" asChild>
-                <Link to="/signup">Create free account</Link>
+                <Link to="/signup">Create account</Link>
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-11 font-semibold"
-                asChild
-              >
+              <Button size="lg" variant="outline" className="h-11 font-semibold" asChild>
                 <Link to="/home#how-it-works">See how it works</Link>
               </Button>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-border bg-[var(--ajali-surface)]">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <p className="text-sm font-medium">Operations</p>
-              <p className="text-sm text-muted-foreground">Incidents</p>
-            </div>
-            <ul>
-              {PREVIEW_ROWS.map((row, index) => (
-                <li
-                  key={row.id}
-                  className={
-                    index === PREVIEW_ROWS.length - 1
-                      ? "px-4 py-3"
-                      : "border-b border-border px-4 py-3"
-                  }
-                >
-                  <div className="flex items-baseline justify-between gap-4">
-                    <p className="text-sm font-medium">{row.type}</p>
-                    <p className="shrink-0 text-xs text-muted-foreground">
-                      {row.status}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {row.id} · {row.place}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <HeroMapShowcase />
         </div>
       </section>
 
       <section className="border-b border-border">
-        <div className="mx-auto grid w-full max-w-6xl px-4 sm:grid-cols-3 sm:px-6">
-          <div className="py-8 sm:pr-8">
-            <p className="text-sm font-medium">Citizens report</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Place, description, and photos from the scene.
-            </p>
-          </div>
-          <div className="border-t border-border py-8 sm:border-t-0 sm:border-l sm:px-8">
-            <p className="text-sm font-medium">Admins review</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Verify, start response, resolve, or close a report.
-            </p>
-          </div>
-          <div className="border-t border-border py-8 sm:border-t-0 sm:border-l sm:pl-8">
-            <p className="text-sm font-medium">The map stays current</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Only active response incidents appear on the public map.
-            </p>
-          </div>
+        <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-12 sm:grid-cols-3 sm:px-6 sm:py-14">
+          {FLOW_STEPS.map((step) => (
+            <div
+              key={step.title}
+              className="rounded-lg border border-border bg-background p-6"
+            >
+              <div className="mb-3 inline-flex size-9 items-center justify-center rounded-md bg-[var(--ajali-cream)] text-[var(--ajali-primary)]">
+                <FaIcon icon={step.icon} className="text-base" />
+              </div>
+              <p className="text-sm font-semibold">{step.title}</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {step.body}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -177,19 +169,19 @@ function HomePage() {
           <h2 className="text-2xl font-semibold tracking-tight">About Ajali!</h2>
           <div className="max-w-2xl space-y-4 text-base leading-7 text-muted-foreground">
             <p>
-              Ajali! helps people in Kenya report emergencies quickly and
-              clearly. When something happens on the road, in a market, or in
-              your neighbourhood, you can send a report with the place, what
-              you saw, and photos.
+              Ajali! enables citizens across Kenya to report road incidents,
+              fires, medical emergencies, and other events with precise
+              location data, structured descriptions, and supporting media.
             </p>
             <p>
-              Trained reviewers check each report. If it is real, they can
-              start a response and keep the community informed. Personal phone
-              numbers and emails stay private on the public map.
+              Trained reviewers validate each submission. Verified incidents
+              enter the response workflow, with status updates communicated
+              to reporters. Personal contact details remain private on the
+              public map.
             </p>
             <p>
-              Ajali! is for everyone: young people, older people, and anyone
-              who needs a clear, step by step way to ask for help.
+              The platform serves both community reporters and emergency
+              operations teams through a single, auditable incident record.
             </p>
           </div>
         </div>
@@ -227,9 +219,8 @@ function HomePage() {
               How it works
             </h2>
             <p className="text-base leading-7 text-muted-foreground">
-              Follow these steps one at a time. You do not need to finish them
-              all at once when you first open the app. When there is an
-              emergency, start from step 3.
+              From account registration to incident resolution, each stage is
+              documented below. In an active emergency, begin at step 3.
             </p>
           </div>
 
@@ -265,8 +256,8 @@ function HomePage() {
               Terms &amp; conditions
             </h2>
             <p className="text-sm leading-6 text-muted-foreground">
-              Please read these rules before you use Ajali!. Opening an account
-              means you agree to them.
+              Review these terms before using Ajali!. Creating an account
+              constitutes acceptance of this agreement.
             </p>
             <Button variant="outline" asChild>
               <Link to="/terms">Open full terms page</Link>

@@ -392,6 +392,29 @@ class IncidentMediaPlaceholderResource(MethodView):
         return Response(svg, mimetype="image/svg+xml")
 
 
+@blp.route("/media/<media_id>/content")
+class IncidentMediaContentResource(MethodView):
+    @jwt_required()
+    @blp.doc(
+        security=[{"BearerAuth": []}],
+        description=(
+            "Stream incident media bytes for authenticated viewers. "
+            "Use this from the UI instead of raw storage URLs."
+        ),
+    )
+    def get(self, media_id):
+        """Stream media file content."""
+        from flask import Response
+
+        body, mime, filename = incident_service.stream_media_content(
+            media_id, get_current_user()
+        )
+        response = Response(body, mimetype=mime)
+        response.headers["Content-Disposition"] = f'inline; filename="{filename}"'
+        response.headers["Cache-Control"] = "private, max-age=300"
+        return response
+
+
 @blp.route("/media/<media_id>")
 class IncidentMediaItemResource(MethodView):
     @jwt_required()

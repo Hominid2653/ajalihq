@@ -1,9 +1,9 @@
 import { useRef, useState } from "react"
-import { ImagePlus, Trash2, Video } from "lucide-react"
+import { ImagePlus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import { env } from "@/lib/env"
+import { MediaPreview } from "@/components/shared/media-preview"
 import { mediaApi } from "@/services/media-api"
 import type { Actor } from "@/services/incident-api"
 import type { IncidentMedia } from "@/types/incident"
@@ -143,33 +143,12 @@ function IncidentMediaPanel({
           {items.map((item) => (
             <li key={item.id} className="overflow-hidden rounded-xl border bg-background">
               <div className="relative aspect-video bg-muted">
-                {item.kind === "image" ? (
-                  <img
-                    src={
-                      item.url.startsWith("/") && !item.url.startsWith("//")
-                        ? `${env.apiBase || ""}${item.url}`
-                        : item.url
-                    }
-                    alt={item.name}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                    <Video className="size-8" />
-                    <a
-                      href={
-                        item.url.startsWith("/") && !item.url.startsWith("//")
-                          ? `${env.apiBase || ""}${item.url}`
-                          : item.url
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-primary underline"
-                    >
-                      Open video
-                    </a>
-                  </div>
-                )}
+                <MediaPreview
+                  mediaId={item.id.startsWith("local-") ? undefined : item.id}
+                  url={item.url}
+                  name={item.name}
+                  kind={item.kind}
+                />
               </div>
               <div className="flex items-center justify-between gap-2 p-2">
                 <p className="truncate text-xs font-medium">{item.name}</p>

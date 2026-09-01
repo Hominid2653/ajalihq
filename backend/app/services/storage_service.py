@@ -107,6 +107,15 @@ def _save_local_fallback_file(
     incident_id: str,
 ) -> tuple[str, str]:
     """Save actual uploaded file locally in instance directory for dev/test mode."""
+    if os.getenv("PORT") or os.getenv("FLASK_ENV", "").lower() == "production":
+        abort(
+            503,
+            message=(
+                "Media storage is not configured for production. "
+                "Set SUPABASE_URL and SUPABASE_KEY on the server."
+            ),
+        )
+
     safe_name = _sanitize_filename(filename)
     unique_filename = f"{uuid.uuid4().hex[:12]}_{safe_name}"
     uploads_dir = os.path.join(current_app.instance_path, "uploads", incident_id)
@@ -184,6 +193,64 @@ def upload_to_supabase_storage(
 
     public_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{unique_key}"
     return public_url, unique_key
+
+
+def fetch_stored_media_bytes(storage_key: str, url: str) -> tuple[bytes, str]:
+    """Load bytes for a stored media object from local disk or Supabase."""
+    supabase_url, supabase_key, bucket = _get_supabase_config()
+
+    if storage_key.startswith("local://"):
+        relative = storage_key.removeprefix("local://")
+        incident_id, filename = relative.split("/", 1)
+        uploads_dir = os.path.join(current_app.instance_path, "uploads", incident_id)
+        file_path = os.path.join(uploads_dir, filename)
+        if not os.path.isfile(file_path):
+            abort(404, message="Media file not found on server.")
+        with open(file_path, "rb") as handle:
+            return handle.read(), "application/octet-stream"
+
+    object_key = storage_key
+    if not object_key and url and "supabase.co/storage/v1/object/" in url:
+        marker = f"/object/public/{bucket}/"
+        if marker in url:
+            object_key = url.split(marker, 1)[1]
+        else:
+            parts = url.split("/object/", 1)
+            if len(parts) == 2:
+                object_key = parts[1].split("/", 1)[-1]
+
+    if object_key and supabase_url and supabase_key:
+        encoded = "/".join(urllib.parse.quote(part) for part in object_key.split("/"))
+        fetch_url = f"{supabase_url}/storage/v1/object/{bucket}/{encoded}"
+        req = urllib.request.Request(
+            fetch_url,
+            headers={
+                "Authorization": f"Bearer {supabase_key}",
+                "apiKey": supabase_key,
+            },
+            method="GET",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                body = resp.read()
+                mime = resp.headers.get("Content-Type") or "application/octet-stream"
+                return body, mime
+        except urllib.error.HTTPError as err:
+            if err.code == 404:
+                abort(404, message="Media file not found in storage.")
+            abort(502, message="Could not fetch media from storage.")
+
+    if url.startswith("http://") or url.startswith("https://"):
+        try:
+            with urllib.request.urlopen(url, timeout=20) as resp:
+                body = resp.read()
+                mime = resp.headers.get("Content-Type") or "application/octet-stream"
+                return body, mime
+        except Exception as exc:
+            logger.error("Could not fetch media URL %s: %s", url, exc)
+            abort(404, message="Media file is unavailable.")
+
+    abort(404, message="Media file is unavailable.")
 
 
 def process_media_upload(

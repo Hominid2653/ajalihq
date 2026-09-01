@@ -172,6 +172,36 @@ export async function apiFetch<T>(
   return data as T
 }
 
+/** Fetch binary content (images/videos) with auth — for media streaming endpoints. */
+export async function apiFetchBlob(
+  path: string,
+  options: RequestOptions = {}
+): Promise<Blob> {
+  const { query, token, skipAuth = false, headers = {}, body: _body, ...rest } = options
+  const url = buildUrl(path, query)
+  const reqHeaders = new Headers(headers)
+
+  const authToken = token !== undefined ? token : skipAuth ? null : readToken()
+  if (authToken && !reqHeaders.has("Authorization")) {
+    reqHeaders.set("Authorization", `Bearer ${authToken}`)
+  }
+
+  const response = await fetch(url, {
+    ...rest,
+    method: rest.method ?? "GET",
+    headers: reqHeaders,
+  })
+
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type") ?? ""
+    const isJson = contentType.toLowerCase().includes("application/json")
+    const data = isJson ? await response.json().catch(() => null) : null
+    throw new ApiError(parseErrorMessage(response.status, data), response.status, data)
+  }
+
+  return response.blob()
+}
+
 export const apiClient = {
   get<T>(path: string, query?: Record<string, unknown>, options?: RequestOptions) {
     return apiFetch<T>(path, { ...options, method: "GET", query })

@@ -35,6 +35,14 @@ def test_incident_media_upload_flow(client, app):
     ids_in_list = [m["id"] for m in listed.get_json()]
     assert media_id in ids_in_list
 
+    # 2b. Stream uploaded bytes back through authenticated content route
+    content_resp = client.get(
+        f"/api/v1/incidents/media/{media_id}/content",
+        headers=admin,
+    )
+    assert content_resp.status_code == 200
+    assert content_resp.data == file_content
+
     # 3. Soft-delete the media
     delete_resp = client.delete(
         f"/api/v1/incidents/media/{media_id}",

@@ -727,3 +727,30 @@ def remove_media(media_id: str, actor: User) -> bool:
     )
     db.session.commit()
     return True
+
+
+def stream_media_content(media_id: str, actor: User) -> tuple[bytes, str, str]:
+    """Return raw bytes, mime type, and download filename for incident media."""
+    from uuid import UUID
+
+    from flask_smorest import abort
+
+    from app.services.storage_service import fetch_stored_media_bytes
+
+    try:
+        uid = UUID(media_id)
+    except ValueError:
+        abort(400, message="Invalid media id.")
+
+    media = db.session.get(IncidentMedia, uid)
+    if media is None or media.deleted_at is not None:
+        abort(404, message="Media not found.")
+
+    incident = db.session.get(Incident, media.incident_id)
+    if incident is None:
+        abort(404, message="Incident not found.")
+    ensure_can_view_incident(incident, actor)
+
+    body, mime = fetch_stored_media_bytes(media.storage_key or "", media.url or "")
+    filename = media.name or f"evidence-{media.id}"
+    return body, mime, filename

@@ -95,10 +95,33 @@ def _ensure_bucket_exists(supabase_url: str, supabase_key: str, bucket: str) -> 
         with urllib.request.urlopen(req, timeout=8):
             logger.info("Created Supabase storage bucket: %s", bucket)
     except urllib.error.HTTPError as exc:
-        if exc.code not in (400, 409):
+        if exc.code in (400, 409):
+            _ensure_bucket_public(supabase_url, supabase_key, bucket)
+        else:
             logger.warning("Supabase bucket creation check returned %s: %s", exc.code, exc.reason)
     except Exception as exc:
         logger.warning("Could not verify Supabase bucket existence: %s", exc)
+
+
+def _ensure_bucket_public(supabase_url: str, supabase_key: str, bucket: str) -> None:
+    """Ensure an existing bucket allows public read (for direct CDN URLs)."""
+    endpoint = f"{supabase_url}/storage/v1/bucket/{bucket}"
+    payload = json.dumps({"public": True}).encode("utf-8")
+    req = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {supabase_key}",
+            "apiKey": supabase_key,
+            "Content-Type": "application/json",
+        },
+        method="PUT",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=8):
+            logger.info("Ensured Supabase bucket is public: %s", bucket)
+    except Exception as exc:
+        logger.warning("Could not mark bucket public (set manually in Supabase UI): %s", exc)
 
 
 def _save_local_fallback_file(
@@ -195,6 +218,20 @@ def upload_to_supabase_storage(
     return public_url, unique_key
 
 
+def _parse_supabase_object_location(url: str) -> tuple[str, str] | None:
+    """Extract (bucket, object_key) from a Supabase storage URL."""
+    marker = "/storage/v1/object/"
+    if marker not in url:
+        return None
+    tail = url.split(marker, 1)[1]
+    if tail.startswith("public/"):
+        tail = tail[7:]
+    if "/" not in tail:
+        return None
+    bucket_name, object_key = tail.split("/", 1)
+    return bucket_name, object_key
+
+
 def fetch_stored_media_bytes(storage_key: str, url: str) -> tuple[bytes, str]:
     """Load bytes for a stored media object from local disk or Supabase."""
     supabase_url, supabase_key, bucket = _get_supabase_config()
@@ -209,19 +246,22 @@ def fetch_stored_media_bytes(storage_key: str, url: str) -> tuple[bytes, str]:
         with open(file_path, "rb") as handle:
             return handle.read(), "application/octet-stream"
 
+    bucket_name = bucket
     object_key = storage_key
-    if not object_key and url and "supabase.co/storage/v1/object/" in url:
-        marker = f"/object/public/{bucket}/"
-        if marker in url:
-            object_key = url.split(marker, 1)[1]
-        else:
-            parts = url.split("/object/", 1)
-            if len(parts) == 2:
-                object_key = parts[1].split("/", 1)[-1]
+
+    # Prefer bucket/key embedded in the stored public URL (handles env bucket mismatches).
+    if url and "supabase.co" in url:
+        parsed = _parse_supabase_object_location(url)
+        if parsed:
+            bucket_name, object_key = parsed
+    elif not object_key and url and "supabase.co/storage/v1/object/" in url:
+        parsed = _parse_supabase_object_location(url)
+        if parsed:
+            bucket_name, object_key = parsed
 
     if object_key and supabase_url and supabase_key:
         encoded = "/".join(urllib.parse.quote(part) for part in object_key.split("/"))
-        fetch_url = f"{supabase_url}/storage/v1/object/{bucket}/{encoded}"
+        fetch_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{encoded}"
         req = urllib.request.Request(
             fetch_url,
             headers={
@@ -236,6 +276,12 @@ def fetch_stored_media_bytes(storage_key: str, url: str) -> tuple[bytes, str]:
                 mime = resp.headers.get("Content-Type") or "application/octet-stream"
                 return body, mime
         except urllib.error.HTTPError as err:
+            logger.error(
+                "Supabase fetch failed for bucket=%s key=%s: %s",
+                bucket_name,
+                object_key,
+                err.code,
+            )
             if err.code == 404:
                 abort(404, message="Media file not found in storage.")
             abort(502, message="Could not fetch media from storage.")

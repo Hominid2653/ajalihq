@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom"
 
+import { AuthBootstrap } from "@/components/auth/auth-bootstrap"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { ROLES } from "@/lib/rbac"
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage"
@@ -40,6 +41,7 @@ function LegacyReportRedirect({ suffix = "" }: { suffix?: string }) {
 function App() {
   return (
     <BrowserRouter>
+      <AuthBootstrap>
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
@@ -238,6 +240,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </AuthBootstrap>
     </BrowserRouter>
   )
 }
